@@ -5,7 +5,6 @@ import rybina.ctu.bully.utils.ServerRegistry;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -23,12 +22,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
     private final FileManager fileManager;
 
 
-    public NodeImpl(int nodeId, Registry registry) throws RemoteException {
+    public NodeImpl(int nodeId, ServerRegistry registry) throws RemoteException {
         this.nodeId = nodeId;
         this.isCoordinator = false;
         this.coordinatorId = -1;
         this.fileManager = new FileManager(this);
-        this.registry = new ServerRegistry(registry);
+        this.registry = registry;
     }
 
     @Override
@@ -41,6 +40,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
         setIsCoordinator(true);
         notifyAll(node -> {
             try {
+                node.setIsCoordinator(false);
                 node.setCoordinatorId(coordinatorId);
             } catch (RemoteException ignored) {
             }
@@ -105,9 +105,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
         return this.fileManager;
     }
 
-    private void initCoordinator() throws RemoteException {
-        logger.info("The node coordinator is uninitialized. Binding the coordinator...");
+    public void initCoordinator() throws RemoteException {
         if (coordinatorId == -1) {
+            logger.info("The node coordinator is uninitialized. Binding the coordinator...");
             String[] nodeIdList = registry.getNodeIdList();
             if (nodeIdList.length == 1) {
                 logger.info("The node is first in registry. Initialized node with id " + nodeId + " as coordinator.");

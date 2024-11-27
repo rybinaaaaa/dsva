@@ -1,7 +1,5 @@
 package rybina.ctu.bully;
-
-import rybina.ctu.bully.client.node.Node;
-import rybina.ctu.bully.client.node.NodeImpl;
+import rybina.ctu.bully.utils.ServerRegistry;
 
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -13,29 +11,34 @@ import static rybina.ctu.bully.utils.ServerProperties.getPort;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
-    private static Registry registry;
 
     public static void startServer() {
         try {
             System.setProperty("java.rmi.server.hostname", getHost());
             logger.info("Preparing server...");
-            registry = LocateRegistry.createRegistry(getPort());
+            LocateRegistry.createRegistry(getPort());
             logger.info("Server ready!");
+
+            while (true) {
+                Thread.sleep(1000000);
+            }
         } catch (RemoteException e) {
             logger.severe("Server exception: " + e);
+        } catch (InterruptedException e) {
+            logger.severe("Server has been interrupted: " + e);
+            throw new RuntimeException(e);
         }
     }
 
-    public static Node addNodeToRegistry(int nodeId) throws RemoteException {
+    public static ServerRegistry getRegistry() throws RemoteException {
+        Registry registry = LocateRegistry.getRegistry(getHost(), getPort());
         if (registry == null) {
-            logger.severe("Server is not started yet. Registry not initialized");
+            logger.severe("Server is not running!");
         }
+        return new ServerRegistry(registry);
+    }
 
-        logger.info("Starting node with id: " + nodeId);
-        NodeImpl node = new NodeImpl(nodeId, registry);
-        logger.info("Looking for server");
-        registry.rebind(String.valueOf(nodeId), node);
-        node.run();
-        return node;
+    public static void main(String[] args) {
+        startServer();
     }
 }

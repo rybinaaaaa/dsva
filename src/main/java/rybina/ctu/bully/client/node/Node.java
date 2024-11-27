@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 
 public interface Node extends Remote {
 
+    void initCoordinator() throws RemoteException;
+
     void setCoordinatorId(int coordinatorId) throws RemoteException;
 
     void setIsCoordinator(boolean isCoordinator) throws RemoteException;
