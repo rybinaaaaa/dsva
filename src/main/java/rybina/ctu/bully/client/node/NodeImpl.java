@@ -36,6 +36,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     @Override
     public void becomeCoordinator() throws RemoteException {
         setIsCoordinator(true);
+        setCoordinatorId(nodeId);
         notifyAll(node -> {
             try {
                 node.setIsCoordinator(false);
