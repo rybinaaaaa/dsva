@@ -1,6 +1,7 @@
 package rybina.ctu.bully;
 import rybina.ctu.bully.utils.ServerRegistry;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -8,6 +9,7 @@ import java.util.logging.Logger;
 
 import static rybina.ctu.bully.utils.ServerProperties.getHost;
 import static rybina.ctu.bully.utils.ServerProperties.getPort;
+import static rybina.ctu.bully.utils.ServerRegistry.bindServerRegistry;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
@@ -16,7 +18,7 @@ public class Server {
         try {
             System.setProperty("java.rmi.server.hostname", getHost());
             logger.info("Preparing server...");
-            LocateRegistry.createRegistry(getPort());
+            bindServerRegistry(LocateRegistry.createRegistry(getPort()));
             logger.info("Server ready!");
 
             while (true) {
@@ -30,12 +32,13 @@ public class Server {
         }
     }
 
-    public static ServerRegistry getRegistry() throws RemoteException {
+    public static ServerRegistry getRegistry() throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry(getHost(), getPort());
         if (registry == null) {
             logger.severe("Server is not running!");
+            return null;
         }
-        return new ServerRegistry(registry);
+        return ServerRegistry.get(registry);
     }
 
     public static void main(String[] args) {

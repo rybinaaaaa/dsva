@@ -1,6 +1,5 @@
 package rybina.ctu.bully.utils;
 
-import java.io.FileReader;
 import java.io.InputStream;
 import java.util.Properties;
 

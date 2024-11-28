@@ -1,20 +1,27 @@
 package rybina.ctu.bully.utils;
 
-import rybina.ctu.bully.Server;
 import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
 
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.logging.Logger;
 
-public class ServerRegistry {
+public class ServerRegistry extends UnicastRemoteObject implements Remote {
     private final Registry registry;
     private static final Logger logger = Logger.getLogger(ServerRegistry.class.getName());
 
-    public ServerRegistry(Registry registry) {
-        this.registry = registry;
+    public static ServerRegistry get(Registry registry) throws RemoteException, NotBoundException {
+        return  (ServerRegistry) registry.lookup(ServerRegistry.class.getName());
+    }
+
+    public static ServerRegistry bindServerRegistry(Registry registry) throws RemoteException {
+        ServerRegistry serverRegistry = new ServerRegistry(registry);
+        registry.rebind(ServerRegistry.class.getName(), serverRegistry);
+        return serverRegistry;
     }
 
     public String[] getNodeIdList() throws RemoteException {
@@ -37,5 +44,9 @@ public class ServerRegistry {
         registry.rebind(String.valueOf(nodeId), node);
         node.run();
         return node;
+    }
+
+    public ServerRegistry(Registry registry) throws RemoteException {
+        this.registry = registry;
     }
 }
