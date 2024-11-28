@@ -116,6 +116,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
             logger.info("Getting coordinator from existing nodes");
             for (String id : nodeIdList) {
+                if (id.equals(String.valueOf(nodeId))) continue;
+
                 try {
                     Node node = ServerRegistry.getNodeById(id);
 
