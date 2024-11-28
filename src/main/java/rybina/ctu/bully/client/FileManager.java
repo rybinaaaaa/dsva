@@ -1,16 +1,17 @@
 package rybina.ctu.bully.client;
 
+import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
 
 import java.io.*;
 import java.rmi.RemoteException;
 import java.util.logging.*;
 
-public class FileManager {
-    private final NodeImpl node;
+public class FileManager implements Serializable {
+    private final Node node;
     private static final Logger logger = Logger.getLogger(FileManager.class.getName());
 
-    public FileManager(NodeImpl node) {
+    public FileManager(Node node) {
         this.node = node;
     }
 

@@ -26,4 +26,6 @@ public interface Node extends Remote {
     Node getCoordinator() throws RemoteException;
 
     FileManager getFileManager() throws RemoteException;
+
+    boolean isCoordinator() throws RemoteException;
 }

@@ -1,5 +1,4 @@
 package rybina.ctu.bully.client;
-import rybina.ctu.bully.Server;
 import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
 import rybina.ctu.bully.utils.ServerRegistry;
@@ -95,8 +94,7 @@ public class ConsoleHandler {
             logger.severe("Usage: ConsoleHandler <nodeId>");
         }
 
-        ServerRegistry registry = Server.getRegistry();
-        Node node = registry.addNodeToRegistry(Integer.parseInt(args[0]));
+        Node node = ServerRegistry.addNodeToRegistry(Integer.parseInt(args[0]));
 
         ConsoleHandler consoleHandler = new ConsoleHandler(node.getFileManager());
         consoleHandler.start();

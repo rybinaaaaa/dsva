@@ -7,27 +7,25 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.function.Consumer;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static rybina.ctu.bully.utils.ServerProperties.getHost;
-
-public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
+public class NodeImpl extends UnicastRemoteObject implements Node {
 
     private static final Logger logger = Logger.getLogger(NodeImpl.class.getName());
 
     private final int nodeId;
     private int coordinatorId;
     private boolean isCoordinator;
-    private ServerRegistry registry;
     private final FileManager fileManager;
 
 
-    public NodeImpl(int nodeId, ServerRegistry registry) throws RemoteException {
+    public NodeImpl(int nodeId) throws RemoteException {
         this.nodeId = nodeId;
         this.isCoordinator = false;
         this.coordinatorId = -1;
         this.fileManager = new FileManager(this);
-        this.registry = registry;
     }
 
     @Override
@@ -52,10 +50,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
         logger.info("Node " + nodeId + " Starting election");
         boolean hasHigherPriority = true;
 
-        for (String id : registry.getNodeIdList()) {
+        for (String id : ServerRegistry.getNodeIdList()) {
             if (id.equals(String.valueOf(nodeId))) continue;
             try {
-                Node node = registry.getNodeById(id);
+                Node node = ServerRegistry.getNodeById(id);
                 if (node.getNodeId() > nodeId) {
                     hasHigherPriority = false;
                     node.startElection();
@@ -78,10 +76,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
 
     @Override
     public void notifyAll(Consumer<Node> callback) throws RemoteException {
-        for (String id : registry.getNodeIdList()) {
+        for (String id : ServerRegistry.getNodeIdList()) {
             if (id.equals(String.valueOf(nodeId))) continue;
             try {
-                Node node = registry.getNodeById(id);
+                Node node = ServerRegistry.getNodeById(id);
                 callback.accept(node);
             } catch (NotBoundException e) {
                 logger.severe("Node with id " + id + " not found");
@@ -92,7 +90,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
     @Override
     public Node getCoordinator() throws RemoteException {
         try {
-            return registry.getNodeById(String.valueOf(coordinatorId));
+            return ServerRegistry.getNodeById(String.valueOf(coordinatorId));
         } catch (NotBoundException e) {
             logger.warning("Leader with id " + coordinatorId + " not found. Reevaluatind leader...");
             this.startElection();
@@ -108,7 +106,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
     public void initCoordinator() throws RemoteException {
         if (coordinatorId == -1) {
             logger.info("The node coordinator is uninitialized. Binding the coordinator...");
-            String[] nodeIdList = registry.getNodeIdList();
+            String[] nodeIdList = ServerRegistry.getNodeIdList();
             if (nodeIdList.length == 1) {
                 logger.info("The node is first in registry. Initialized node with id " + nodeId + " as coordinator.");
                 becomeCoordinator();
@@ -118,7 +116,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
             logger.info("Getting coordinator from existing nodes");
             for (String id : nodeIdList) {
                 try {
-                    Node node = registry.getNodeById(id);
+                    Node node = ServerRegistry.getNodeById(id);
 
 //                    The getCoordinator is null-safe
                     Node coordinator = node.getCoordinator();
@@ -138,15 +136,15 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Runnable {
         isCoordinator = coordinator;
     }
 
-    @Override
-    public void run() {
-        try {
-            this.initCoordinator();
-        } catch (RemoteException e) {
-            logger.severe("Node running error " + e);
-            throw new RuntimeException(e);
-        }
-
-        logger.info("Node " + nodeId + " is running on host " + getHost());
-    }
+//    @Override
+//    public void run() {
+//        try {
+//            this.initCoordinator();
+//        } catch (RemoteException e) {
+//            logger.severe("Node running error " + e);
+//            throw new RuntimeException(e);
+//        }
+//
+//        logger.info("Node " + nodeId + " is running on host " + getHost());
+//    }
 }
