@@ -4,6 +4,7 @@ import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
 import rybina.ctu.bully.utils.ServerRegistry;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.Objects;
 import java.util.Scanner;
@@ -89,7 +90,7 @@ public class ConsoleHandler {
         scanner.close();
     }
 
-    public static void main(String[] args) throws RemoteException {
+    public static void main(String[] args) throws RemoteException, NotBoundException {
         if (args.length != 1) {
             logger.severe("Usage: ConsoleHandler <nodeId>");
         }
