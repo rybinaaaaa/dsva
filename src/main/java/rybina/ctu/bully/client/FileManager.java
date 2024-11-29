@@ -1,7 +1,6 @@
 package rybina.ctu.bully.client;
 
 import rybina.ctu.bully.client.node.Node;
-import rybina.ctu.bully.client.node.NodeImpl;
 
 import java.io.*;
 import java.rmi.RemoteException;
@@ -15,25 +14,16 @@ public class FileManager implements Serializable {
         this.node = node;
     }
 
-    public boolean createFile(String filename, boolean isCalledByCoord) throws RemoteException {
-        if (!node.isCoordinator() && !isCalledByCoord) {
+    public boolean createFile(String filename) throws RemoteException {
+        if (!node.isCoordinator()) {
             logger.info("Delegating createFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
-            return node.getCoordinator().getFileManager().createFile(filename, false);
+            return node.getCoordinator().getFileManager().createFile(filename);
         }
 
         File file = new File(filename);
         try {
             if (file.createNewFile()) {
                 logger.info("File was successfully created: " + filename);
-                if (!isCalledByCoord) {
-                    logger.info("Actualize files in the others nodes");
-                    node.notifyAll(n -> {
-                        try {
-                            n.getFileManager().createFile(filename,true);
-                        } catch (RemoteException ignored) {
-                        }
-                    });
-                }
                 return true;
             } else {
                 logger.warning("File already exists: " + filename);
@@ -45,24 +35,15 @@ public class FileManager implements Serializable {
         }
     }
 
-    public boolean writeToFile(String filename, String content, boolean isCalledByCoord) throws RemoteException {
-        if (!node.isCoordinator() && !isCalledByCoord) {
+    public boolean writeToFile(String filename, String content) throws RemoteException {
+        if (!node.isCoordinator()) {
             logger.info("Delegating writeToFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
-            return node.getCoordinator().getFileManager().writeToFile(filename, content, false);
+            return node.getCoordinator().getFileManager().writeToFile(filename, content);
         }
 
         try (FileWriter writer = new FileWriter(filename, true)) {
             writer.write(content + "\n");
             logger.info("Data was successfully written to file: " + filename);
-            if (!isCalledByCoord) {
-                logger.info("Actualize files in the others nodes");
-                node.notifyAll(n -> {
-                    try {
-                        n.getFileManager().writeToFile(filename, content, true);
-                    } catch (RemoteException ignored) {
-                    }
-                });
-            }
             return true;
         } catch (IOException e) {
             logger.severe("Error occurred while writing to file: " + e.getMessage());
@@ -70,10 +51,10 @@ public class FileManager implements Serializable {
         }
     }
 
-    public void readFromFile(String filename, boolean isCalledByCoord) throws RemoteException {
-        if (!node.isCoordinator() && !isCalledByCoord) {
+    public void readFromFile(String filename) throws RemoteException {
+        if (!node.isCoordinator()) {
             logger.info("Delegating readFromFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
-            node.getCoordinator().getFileManager().readFromFile(filename, false);
+            node.getCoordinator().getFileManager().readFromFile(filename);
             return;
         }
 
@@ -93,25 +74,16 @@ public class FileManager implements Serializable {
         }
     }
 
-    public boolean deleteFile(String filename, boolean isCalledByCoord) throws RemoteException {
-        if (!node.isCoordinator() && !isCalledByCoord) {
+    public boolean deleteFile(String filename) throws RemoteException {
+        if (!node.isCoordinator()) {
             logger.info("Delegating deleteFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
-            return node.getCoordinator().getFileManager().deleteFile(filename, false);
+            return node.getCoordinator().getFileManager().deleteFile(filename);
         }
 
         File file = new File(filename);
         if (file.exists()) {
             if (file.delete()) {
                 logger.info("File was successfully deleted: " + filename);
-                if (!isCalledByCoord) {
-                    logger.info("Actualize files in the others nodes");
-                    node.notifyAll(n -> {
-                        try {
-                            n.getFileManager().deleteFile(filename, true);
-                        } catch (RemoteException ignored) {
-                        }
-                    });
-                }
                 return true;
             } else {
                 logger.severe("Failed to delete file: " + filename);
@@ -121,21 +93,5 @@ public class FileManager implements Serializable {
             logger.warning("File does not exist: " + filename);
             return false;
         }
-    }
-
-    public boolean createFile(String filename) throws RemoteException {
-        return createFile(filename, false);
-    }
-
-    public boolean writeToFile(String filename, String content) throws RemoteException {
-        return writeToFile(filename, content, false);
-    }
-
-    public void readFromFile(String filename) throws RemoteException {
-        readFromFile(filename, false);
-    }
-
-    public boolean deleteFile(String filename) throws RemoteException {
-        return deleteFile(filename, false);
     }
 }

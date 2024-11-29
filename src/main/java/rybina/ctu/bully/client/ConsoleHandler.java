@@ -1,6 +1,5 @@
 package rybina.ctu.bully.client;
 import rybina.ctu.bully.client.node.Node;
-import rybina.ctu.bully.client.node.NodeImpl;
 import rybina.ctu.bully.utils.ServerRegistry;
 
 import java.rmi.NotBoundException;
