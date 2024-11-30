@@ -101,6 +101,8 @@ When a node starts an election, it:
 
 @Override
 public void startElection() throws RemoteException {
+    if (electionStarted) return;
+
     logger.info("Node " + nodeId + " Starting election");
     boolean hasHigherPriority = true;
 
@@ -121,9 +123,10 @@ public void startElection() throws RemoteException {
         logger.info("Node " + nodeId + " becomes a leader");
         becomeCoordinator();
     }
+
+    electionStarted = false;
 }
 ```
-
 #### Becoming a Coordinator
 ![election2.png](docs-images/election2.png)
 ```java
