@@ -1,9 +1,7 @@
 package rybina.ctu.bully;
-import rybina.ctu.bully.utils.NodeBinder;
-import rybina.ctu.bully.utils.NodeBinderImpl;
-import rybina.ctu.bully.utils.ServerRegistry;
+import rybina.ctu.bully.client.NodeBinder;
+import rybina.ctu.bully.client.NodeBinderImpl;
 
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;

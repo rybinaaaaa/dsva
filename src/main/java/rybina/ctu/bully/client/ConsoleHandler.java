@@ -64,7 +64,8 @@ public class ConsoleHandler {
                         System.out.print("> ");
                         input = scanner.nextLine();
                         if (!Objects.equals(CANCEL_OPTION, input)) {
-                            fileManager.readFromFile(input);
+                            String content = fileManager.readFromFile(input);
+                            System.out.println("Content inside file with name {" + input + "} is: " + content);
                         }
                         break;
                     case '4':

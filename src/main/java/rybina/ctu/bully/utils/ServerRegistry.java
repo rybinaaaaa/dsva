@@ -1,5 +1,6 @@
 package rybina.ctu.bully.utils;
 
+import rybina.ctu.bully.client.NodeBinder;
 import rybina.ctu.bully.client.node.Node;
 
 import java.rmi.NotBoundException;
@@ -7,7 +8,6 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Arrays;
-import java.util.Objects;
 
 import static rybina.ctu.bully.utils.ServerProperties.getHost;
 import static rybina.ctu.bully.utils.ServerProperties.getPort;

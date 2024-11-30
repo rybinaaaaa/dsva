@@ -1,7 +1,6 @@
-package rybina.ctu.bully.utils;
+package rybina.ctu.bully.client;
 
 import rybina.ctu.bully.client.node.Node;
-import rybina.ctu.bully.client.node.NodeImpl;
 
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
