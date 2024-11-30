@@ -7,8 +7,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.function.Consumer;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class NodeImpl extends UnicastRemoteObject implements Node {
@@ -138,16 +136,4 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         coordinatorId = this.nodeId;
         isCoordinator = coordinator;
     }
-
-//    @Override
-//    public void run() {
-//        try {
-//            this.initCoordinator();
-//        } catch (RemoteException e) {
-//            logger.severe("Node running error " + e);
-//            throw new RuntimeException(e);
-//        }
-//
-//        logger.info("Node " + nodeId + " is running on host " + getHost());
-//    }
 }
