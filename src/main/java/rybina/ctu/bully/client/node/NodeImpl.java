@@ -17,6 +17,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     private int coordinatorId;
     private boolean isCoordinator;
     private final FileManager fileManager;
+    private boolean electionStarted = false;
 
 
     public NodeImpl(int nodeId) throws RemoteException {
@@ -46,6 +47,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public void startElection() throws RemoteException {
+        if (electionStarted) return;
+
         logger.info("Node " + nodeId + " Starting election");
         boolean hasHigherPriority = true;
 
@@ -66,6 +69,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             logger.info("Node " + nodeId + " becomes a leader");
             becomeCoordinator();
         }
+
+        electionStarted = false;
     }
 
 
