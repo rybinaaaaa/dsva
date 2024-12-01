@@ -22,7 +22,9 @@ public class FileManager implements Serializable {
     public boolean createFile(String filename, boolean isCalledByCoord) throws RemoteException {
         if (!node.isCoordinator() && !isCalledByCoord) {
             logger.info("Delegating createFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
-            return node.getCoordinator().getFileManager().createFile(filename, false);
+            return node.getCoordinator()
+                    .getFileManager()
+                    .createFile(filename, false);
         }
 
         if (fileSimulation.containsKey(filename)) {
@@ -30,12 +32,16 @@ public class FileManager implements Serializable {
             return false;
         }
 
+        logger.info("Before update: " + fileSimulation);
         fileSimulation.put(filename, new StringBuilder());
         logger.info("File was successfully created: " + filename);
+        fileSimulation.put(filename, new StringBuilder());
+        logger.info("After update: " + fileSimulation);
+
 
         if (!isCalledByCoord) {
             logger.info("Actualize files in the others nodes");
-            node.notifyAll(new CreateFileConsumer(filename));  // Передаем сериализуемый класс для создания файла
+            node.notifyAll(new CreateFileConsumer(filename));
         }
 
         return true;
@@ -44,7 +50,9 @@ public class FileManager implements Serializable {
     public boolean writeToFile(String filename, String content, boolean isCalledByCoord) throws RemoteException {
         if (!node.isCoordinator() && !isCalledByCoord) {
             logger.info("Delegating writeToFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
-            return node.getCoordinator().getFileManager().writeToFile(filename, content, false);
+            return node.getCoordinator()
+                    .getFileManager()
+                    .writeToFile(filename, content, false);
         }
 
         if (!fileSimulation.containsKey(filename)) {
@@ -57,7 +65,7 @@ public class FileManager implements Serializable {
 
         if (!isCalledByCoord) {
             logger.info("Actualize files in the others nodes");
-            node.notifyAll(new WriteFileConsumer(filename, content));  // Передаем сериализуемый класс для удаления файла
+            node.notifyAll(new WriteFileConsumer(filename, content));
         }
 
         return true;
@@ -66,7 +74,9 @@ public class FileManager implements Serializable {
     public String readFromFile(String filename, boolean isCalledByCoord) throws RemoteException {
         if (!node.isCoordinator() && !isCalledByCoord) {
             logger.info("Delegating readFromFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
-            return node.getCoordinator().getFileManager().readFromFile(filename, false);
+            return node.getCoordinator()
+                    .getFileManager()
+                    .readFromFile(filename, false);
         }
 
         if (!fileSimulation.containsKey(filename)) {
@@ -93,7 +103,7 @@ public class FileManager implements Serializable {
 
         if (!isCalledByCoord) {
             logger.info("Actualize files in the others nodes");
-            node.notifyAll(new DeleteFileConsumer(filename));  // Передаем сериализуемый класс для удаления файла
+            node.notifyAll(new DeleteFileConsumer(filename));
         }
 
         return true;
