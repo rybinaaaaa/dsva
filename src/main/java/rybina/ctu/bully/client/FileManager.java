@@ -51,7 +51,7 @@ public class FileManager implements Serializable {
             node.notifyAll(new WriteFileConsumer(filename, content));
         }
 
-        return true;
+        return node.writeToFile(filename, content);
     }
 
     public String readFromFile(String filename, boolean isCalledByCoord) throws RemoteException {
@@ -76,7 +76,7 @@ public class FileManager implements Serializable {
             node.notifyAll(new DeleteFileConsumer(filename));
         }
 
-        return true;
+        return node.deleteFile(filename);
     }
 
     public boolean createFile(String filename) throws RemoteException {
