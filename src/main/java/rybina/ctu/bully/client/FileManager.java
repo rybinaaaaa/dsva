@@ -1,10 +1,9 @@
 package rybina.ctu.bully.client;
 
 import rybina.ctu.bully.client.node.Node;
+
 import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import static rybina.ctu.bully.utils.Consumers.*;
@@ -12,7 +11,6 @@ import static rybina.ctu.bully.utils.Consumers.*;
 public class FileManager implements Serializable {
     private final Node node;
     private static final Logger logger = Logger.getLogger(FileManager.class.getName());
-    private final Map<String, StringBuilder> fileSimulation = new HashMap<>();
 
     public FileManager(Node node) {
         this.node = node;
@@ -27,17 +25,10 @@ public class FileManager implements Serializable {
                     .createFile(filename, false);
         }
 
-        if (fileSimulation.containsKey(filename)) {
-            logger.warning("File already exists: " + filename);
-            return false;
+
+        if (node.createFile(filename)) {
+            logger.info("File was successfully created: " + filename);
         }
-
-        logger.info("Before update: " + fileSimulation);
-        fileSimulation.put(filename, new StringBuilder());
-        logger.info("File was successfully created: " + filename);
-        fileSimulation.put(filename, new StringBuilder());
-        logger.info("After update: " + fileSimulation);
-
 
         if (!isCalledByCoord) {
             logger.info("Actualize files in the others nodes");
@@ -55,14 +46,6 @@ public class FileManager implements Serializable {
                     .writeToFile(filename, content, false);
         }
 
-        if (!fileSimulation.containsKey(filename)) {
-            logger.warning("File does not exist: " + filename);
-            return false;
-        }
-
-        fileSimulation.get(filename).append(content).append("\n");
-        logger.info("Data was successfully written to file: " + filename);
-
         if (!isCalledByCoord) {
             logger.info("Actualize files in the others nodes");
             node.notifyAll(new WriteFileConsumer(filename, content));
@@ -79,12 +62,7 @@ public class FileManager implements Serializable {
                     .readFromFile(filename, false);
         }
 
-        if (!fileSimulation.containsKey(filename)) {
-            logger.warning("File does not exist: " + filename);
-            return null;
-        }
-
-        return fileSimulation.get(filename).toString();
+        return node.readFromFile(filename);
     }
 
     public boolean deleteFile(String filename, boolean isCalledByCoord) throws RemoteException {
@@ -92,14 +70,6 @@ public class FileManager implements Serializable {
             logger.info("Delegating deleteFile request for '" + filename + "' from Node with id: " + node.getNodeId() + " to coordinator Node " + node.getCoordinator().getNodeId());
             return node.getCoordinator().getFileManager().deleteFile(filename, false);
         }
-
-        if (!fileSimulation.containsKey(filename)) {
-            logger.warning("File does not exist: " + filename);
-            return false;
-        }
-
-        fileSimulation.remove(filename);
-        logger.info("File was successfully deleted: " + filename);
 
         if (!isCalledByCoord) {
             logger.info("Actualize files in the others nodes");

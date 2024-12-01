@@ -28,4 +28,12 @@ public interface Node extends Remote {
     FileManager getFileManager() throws RemoteException;
 
     boolean isCoordinator() throws RemoteException;
+
+    boolean createFile(String filename) throws RemoteException;
+
+    boolean deleteFile(String filename) throws RemoteException;
+
+    boolean writeToFile(String filename, String content) throws RemoteException;
+
+    String readFromFile(String filename) throws RemoteException;
 }

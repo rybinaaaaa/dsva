@@ -6,6 +6,8 @@ import rybina.ctu.bully.utils.ServerRegistry;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -18,6 +20,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     private boolean isCoordinator;
     private final FileManager fileManager;
     private boolean electionStarted = false;
+    private final Map<String, StringBuilder> fileSimulation = new HashMap<>();
 
 
     public NodeImpl(int nodeId) throws RemoteException {
@@ -136,6 +139,51 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     public boolean isCoordinator() {
         return isCoordinator;
     }
+
+    @Override
+    public boolean createFile(String filename) throws RemoteException {
+        if (fileSimulation.containsKey(filename)) {
+            logger.warning("File already exists: " + filename);
+            return false;
+        }
+        fileSimulation.put(filename, new StringBuilder());
+        return true;
+    }
+
+    @Override
+    public boolean deleteFile(String filename) throws RemoteException {
+        if (!fileSimulation.containsKey(filename)) {
+            logger.warning("File does not exist: " + filename);
+            return false;
+        }
+
+        fileSimulation.remove(filename);
+        logger.info("File was successfully deleted: " + filename);
+        return true;
+    }
+
+    @Override
+    public boolean writeToFile(String filename, String content) throws RemoteException {
+        if (!fileSimulation.containsKey(filename)) {
+            logger.warning("File does not exist: " + filename);
+            return false;
+        }
+
+        fileSimulation.get(filename).append(content).append("\n");
+        logger.info("Data was successfully written to file: " + filename);
+        return true;
+    }
+
+    @Override
+    public String readFromFile(String filename) throws RemoteException {
+        if (!fileSimulation.containsKey(filename)) {
+            logger.warning("File does not exist: " + filename);
+            return null;
+        }
+
+        return fileSimulation.get(filename).toString();
+    }
+
 
     public void setIsCoordinator(boolean coordinator) {
         coordinatorId = this.nodeId;
