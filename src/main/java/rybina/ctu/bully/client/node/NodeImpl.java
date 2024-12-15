@@ -87,7 +87,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     public void wakeUpElection(Node sender) throws RemoteException, NotBoundException {
         if (electionStarted) return;
         this.electionStarted = true;
-        sender.receiveLostStatus();
+        if (Integer.parseInt(sender.getNodeId()) > Integer.parseInt(nodeId)) {
+            sender.receiveLostStatus();
+        }
+
         this.startElection();
     }
 
@@ -113,30 +116,30 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         }
     }
 
-    public void initCoordinator() throws RemoteException, NotBoundException {
-        if (coordinator == null) {
-            logger.info("The node coordinator is uninitialized. Binding the coordinator...");
-            if (neighbors.isEmpty()) {
-                logger.info("The node is first in registry. Initialized node with id " + nodeId + " as coordinator.");
-                becomeCoordinator();
-                return;
-            }
-
-            logger.info("Getting coordinator from existing nodes");
-            for (NodeInfo nodeInfo : neighbors) {
-                if (nodeInfo.getNodeId().equals(String.valueOf(nodeId))) continue;
-
-                try {
-                    Node node = ServerRegistry.getNode(nodeInfo);
-
-//                    The getCoordinator is null-safe
-                    Node coordinator = node.getCoordinator();
-                    setCoordinator(coordinator.getNodeInfo());
-                } catch (NotBoundException ignored) {
-                }
-            }
-        }
-    }
+//    public void initCoordinator() throws RemoteException, NotBoundException {
+//        if (coordinator == null) {
+//            logger.info("The node coordinator is uninitialized. Binding the coordinator...");
+//            if (neighbors.isEmpty()) {
+//                logger.info("The node is first in registry. Initialized node with id " + nodeId + " as coordinator.");
+//                becomeCoordinator();
+//                return;
+//            }
+//
+//            logger.info("Getting coordinator from existing nodes");
+//            for (NodeInfo nodeInfo : neighbors) {
+//                if (nodeInfo.getNodeId().equals(String.valueOf(nodeId))) continue;
+//
+//                try {
+//                    Node node = ServerRegistry.getNode(nodeInfo);
+//
+////                    The getCoordinator is null-safe
+//                    Node coordinator = node.getCoordinator();
+//                    setCoordinator(coordinator.getNodeInfo());
+//                } catch (NotBoundException ignored) {
+//                }
+//            }
+//        }
+//    }
 
     @Override
     public boolean isCoordinator() {
@@ -150,8 +153,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public void addNeighbor(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
-        this.neighbors.add(nodeInfo);
-        ServerRegistry.getNode(nodeInfo).addNeighbor(this.getNodeInfo());
+            this.neighbors.add(nodeInfo);
     }
 
     @Override
@@ -192,6 +194,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public void showAllNodes() throws RemoteException {
+        System.out.println("Node with id: " + getNodeId() + " has neighbours:");
         this.neighbors.forEach(System.out::println);
     }
 
@@ -200,7 +203,25 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         return nodeInfo;
     }
 
-    public void setCoordinator(NodeInfo coordinator) {
+    public void setCoordinator(NodeInfo coordinator) throws RemoteException {
+        this.isCoordinator = coordinator == nodeInfo;
         this.coordinator = coordinator;
+    }
+
+    public void bindNode(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
+        this.addNeighbor(nodeInfo);
+        ServerRegistry.getNode(nodeInfo).addNeighbor(this.getNodeInfo());
+    }
+
+    public void bindToNode(NodeImpl node) throws NotBoundException, RemoteException {
+        for (NodeInfo neighbor : node.neighbors) {
+            this.bindNode(neighbor);
+        }
+
+        if (node.coordinator == null) {
+            startElection();
+        } else {
+            this.setCoordinator(node.coordinator);
+        }
     }
 }

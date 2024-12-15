@@ -1,6 +1,7 @@
 package rybina.ctu.bully.utils;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class NodeInfo implements Serializable {
 
@@ -24,5 +25,27 @@ public class NodeInfo implements Serializable {
 
     public String getNodeId() {
         return nodeId;
+    }
+
+    @Override
+    public String toString() {
+        return "NodeInfo{" +
+                "hostname='" + hostname + '\'' +
+                ", port=" + port +
+                ", nodeId='" + nodeId + '\'' +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NodeInfo nodeInfo = (NodeInfo) o;
+        return port == nodeInfo.port && Objects.equals(hostname, nodeInfo.hostname) && Objects.equals(nodeId, nodeInfo.nodeId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(hostname, port, nodeId);
     }
 }

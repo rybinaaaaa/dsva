@@ -1,10 +1,10 @@
 package rybina.ctu.bully;
 
-import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class Server {
@@ -16,23 +16,19 @@ public class Server {
         try {
             // Create nodes
             NodeImpl node1 = new NodeImpl("localhost", 1099, "1");
-            NodeImpl node2 = new NodeImpl("localhost", 1098, "2");
-            NodeImpl node3 = new NodeImpl("localhost", 1097, "3");
+            NodeImpl node2 = new NodeImpl("localhost", 1099, "2");
+            NodeImpl node3 = new NodeImpl("localhost", 1099, "3");
 
 
             node1.bindToServer();
             node2.bindToServer();
             node3.bindToServer();
 
-            // Add neighbors
-            node1.addNeighbor(node2.getNodeInfo());
-            node1.addNeighbor(node3.getNodeInfo());
-            node2.addNeighbor(node3.getNodeInfo());
+            node2.bindToNode(node1);
 
         } catch (RemoteException | NotBoundException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     public static void main(String[] args) {
