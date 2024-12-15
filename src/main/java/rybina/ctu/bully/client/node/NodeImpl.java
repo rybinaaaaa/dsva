@@ -2,16 +2,19 @@ package rybina.ctu.bully.client.node;
 
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
+import rybina.ctu.bully.utils.Simulation;
+import rybina.ctu.bully.utils.Simulation.PermissionRole;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+
+import static rybina.ctu.bully.utils.Simulation.enrichFakeData;
 
 public class NodeImpl extends UnicastRemoteObject implements Node {
 
@@ -21,20 +24,18 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     private final String nodeId;
     private NodeInfo coordinator = null;
-    private boolean isCoordinator;
-    private boolean isCandidate;
+    private boolean isCoordinator = false;
+    private boolean isCandidate = false;
     private boolean electionStarted = false;
 
     private final List<NodeInfo> neighbors = new ArrayList<>();
+    private final HashMap<String, Simulation.FileInfo> fileSystem = enrichFakeData();
 
 
-    public NodeImpl(String hostname, int port, String nodeId) throws RemoteException, NotBoundException {
-        this.nodeInfo = new NodeInfo(hostname, port, nodeId);
-
+    public NodeImpl(String hostname, int port, String nodeId, PermissionRole permissionRole) throws RemoteException, NotBoundException {
+        nodeInfo = new NodeInfo(hostname, port, nodeId, permissionRole);
         this.nodeId = nodeId;
-        this.isCoordinator = false;
-        this.isCandidate = false;
-//        this.bindToServer();
+        bindToServer();
     }
 
     @Override
@@ -44,13 +45,11 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public void becomeCoordinator() throws RemoteException, NotBoundException {
-        setIsCoordinator(true);
         setCandidate(false);
-        setCoordinator(this.getNodeInfo());
+        setCoordinator(getNodeInfo());
         notifyAll(node -> {
             try {
-                node.setIsCoordinator(false);
-                node.setCoordinator(this.getNodeInfo());
+                node.setCoordinator(getNodeInfo());
             } catch (RemoteException ignored) {
             }
         });
@@ -58,7 +57,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public void startElection() throws RemoteException, NotBoundException {
-        logger.info("Node " + nodeId + " Starting election");
+        logger.info("Node " + nodeId + ": Starts election");
         setCandidate(true);
         Node sender = this;
 
@@ -70,13 +69,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
                         node.wakeUpElection(sender);
                     }
                 } catch (RemoteException | NotBoundException e) {
-                    logger.severe("Error during notifying nodes election");
+                    logger.severe("Node " + nodeId + ": Error during notifying nodes election");
                 }
             }
         });
 
         if (isCandidate) {
-            logger.info("Node " + nodeId + " becomes a leader");
+            logger.info("Node " + nodeId + ": becomes a leader");
             becomeCoordinator();
         }
 
@@ -86,12 +85,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     @Override
     public void wakeUpElection(Node sender) throws RemoteException, NotBoundException {
         if (electionStarted) return;
-        this.electionStarted = true;
+        electionStarted = true;
         if (Integer.parseInt(sender.getNodeId()) > Integer.parseInt(nodeId)) {
             sender.receiveLostStatus();
         }
 
-        this.startElection();
+        startElection();
     }
 
     @Override
@@ -107,63 +106,33 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public Node getCoordinator() throws RemoteException, NotBoundException {
+        if (coordinator == null) {
+            logger.warning("Node " + nodeId + ": have null coordinator. Initializing coordinator");
+            startElection();
+            return getCoordinator();
+        }
+
         try {
             return ServerRegistry.getNode(coordinator);
         } catch (NotBoundException e) {
-            logger.warning("Leader with id " + coordinator.getNodeId() + " not found. Reevaluatind leader...");
-            this.startElection();
-            return this.getCoordinator();
+            logger.warning("Node " + nodeId + ": Looks like coordinator is unavailable. Start election...");
+            startElection();
+            return getCoordinator();
         }
     }
 
-//    public void initCoordinator() throws RemoteException, NotBoundException {
-//        if (coordinator == null) {
-//            logger.info("The node coordinator is uninitialized. Binding the coordinator...");
-//            if (neighbors.isEmpty()) {
-//                logger.info("The node is first in registry. Initialized node with id " + nodeId + " as coordinator.");
-//                becomeCoordinator();
-//                return;
-//            }
-//
-//            logger.info("Getting coordinator from existing nodes");
-//            for (NodeInfo nodeInfo : neighbors) {
-//                if (nodeInfo.getNodeId().equals(String.valueOf(nodeId))) continue;
-//
-//                try {
-//                    Node node = ServerRegistry.getNode(nodeInfo);
-//
-////                    The getCoordinator is null-safe
-//                    Node coordinator = node.getCoordinator();
-//                    setCoordinator(coordinator.getNodeInfo());
-//                } catch (NotBoundException ignored) {
-//                }
-//            }
-//        }
-//    }
-
-    @Override
     public boolean isCoordinator() {
         return isCoordinator;
     }
 
     @Override
     public void receiveLostStatus() throws RemoteException {
-        setIsCoordinator(false);
+        setCandidate(false);
     }
 
     @Override
-    public void addNeighbor(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
-            this.neighbors.add(nodeInfo);
-    }
-
-    @Override
-    public void setIsCoordinator(boolean isCoordinator) throws RemoteException {
-        if (isCoordinator) {
-            coordinator = this.getNodeInfo();
-            this.isCoordinator = true;
-        } else {
-            this.isCoordinator = false;
-        }
+    public void addNeighbor(NodeInfo nodeInfo) throws RemoteException {
+        neighbors.add(nodeInfo);
     }
 
     public void setCandidate(boolean candidate) {
@@ -171,8 +140,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     public void bindToServer() throws RemoteException, NotBoundException {
-        String hostname = this.nodeInfo.getHostname();
-        int port = this.nodeInfo.getPort();
+        String hostname = nodeInfo.getHostname();
+        int port = nodeInfo.getPort();
 
         System.setProperty("java.rmi.server.hostname", hostname);
 
@@ -188,14 +157,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             logger.info("No existing registry found. Creating a new one...");
             registry = LocateRegistry.createRegistry(port);
         }
-        logger.info("Server ready at " + hostname + ":" + this.nodeInfo.getPort());
         registry.rebind(nodeId, this);
+        logger.info("Node " + nodeId + ": Node is running with server at " + hostname + ":" + nodeInfo.getPort());
     }
 
-    @Override
-    public void showAllNodes() throws RemoteException {
+    public void showAllNeighbours() {
         System.out.println("Node with id: " + getNodeId() + " has neighbours:");
-        this.neighbors.forEach(System.out::println);
+        neighbors.forEach(System.out::println);
     }
 
     @Override
@@ -204,24 +172,59 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     public void setCoordinator(NodeInfo coordinator) throws RemoteException {
-        this.isCoordinator = coordinator == nodeInfo;
+        isCoordinator = coordinator == nodeInfo;
         this.coordinator = coordinator;
     }
 
     public void bindNode(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
-        this.addNeighbor(nodeInfo);
-        ServerRegistry.getNode(nodeInfo).addNeighbor(this.getNodeInfo());
+        addNeighbor(nodeInfo);
+        ServerRegistry.getNode(nodeInfo).addNeighbor(getNodeInfo());
     }
 
     public void bindToNode(NodeImpl node) throws NotBoundException, RemoteException {
-        for (NodeInfo neighbor : node.neighbors) {
-            this.bindNode(neighbor);
+        logger.info("Binding to node with id: " + node.getNodeId() + " node with id " + nodeId);
+
+        for (NodeInfo neighbor : node.getNeighbors()) {
+            bindNode(neighbor);
         }
 
+        bindNode(node.getNodeInfo());
         if (node.coordinator == null) {
             startElection();
         } else {
-            this.setCoordinator(node.coordinator);
+            setCoordinator(node.coordinator);
         }
     }
+
+    @Override
+    public String getContent(String fileName, NodeInfo sender) throws NotBoundException, RemoteException {
+        if (isCoordinator) {
+            if (!fileSystem.containsKey(fileName)) {
+                throw new RuntimeException("File " + fileName + " not found");
+            }
+            if (!fileSystem.get(fileName).getRoles().contains(sender.getRole())) {
+                throw new RuntimeException("Role " + sender.getRole() + " is not allowed to access file " + fileName);
+            }
+            return fileSystem.get(fileName).getContent();
+        }
+
+        return getCoordinator().getContent(fileName, sender);
+    }
+
+    @Override
+    public String getContent(String fileName) throws RemoteException, NotBoundException {
+        return getContent(fileName, this.getNodeInfo());
+    }
+
+    @Override
+    public ArrayList<Simulation.FileInfo> getAvailableFiles() throws RemoteException {
+        return new ArrayList<>(this.fileSystem.values());
+    }
+
+    @Override
+    public List<NodeInfo> getNeighbors() {
+        return neighbors;
+    }
+
+
 }

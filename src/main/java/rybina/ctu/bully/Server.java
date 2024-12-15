@@ -1,30 +1,34 @@
 package rybina.ctu.bully;
 
 import rybina.ctu.bully.client.node.NodeImpl;
+import rybina.ctu.bully.utils.Simulation;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.util.List;
-import java.util.logging.Logger;
+import java.util.ArrayList;
 
 public class Server {
-    private static final Logger logger = Logger.getLogger(Server.class.getName());
-
     public static void startServer() {
         System.setProperty("java.rmi.server.hostname", "localhost");
 
         try {
             // Create nodes
-            NodeImpl node1 = new NodeImpl("localhost", 1099, "1");
-            NodeImpl node2 = new NodeImpl("localhost", 1099, "2");
-            NodeImpl node3 = new NodeImpl("localhost", 1099, "3");
-
-
-            node1.bindToServer();
-            node2.bindToServer();
-            node3.bindToServer();
+            NodeImpl node1 = new NodeImpl("localhost", 1099, "1", Simulation.PermissionRole.GUEST);
+            NodeImpl node2 = new NodeImpl("localhost", 1079, "2", Simulation.PermissionRole.ADMIN);
+            NodeImpl node3 = new NodeImpl("localhost", 1059, "3", Simulation.PermissionRole.USER);
 
             node2.bindToNode(node1);
+            node3.bindToNode(node1);
+
+            System.out.println("Test on working nodes....");
+            node1.showAllNeighbours();
+            node2.showAllNeighbours();
+
+            System.out.println("Test on accessing files...");
+            ArrayList<Simulation.FileInfo> availableFiles = node3.getAvailableFiles();
+            availableFiles.forEach(System.out::println);
+
+            System.out.println(node3.getContent("music.mp3"));
 
         } catch (RemoteException | NotBoundException e) {
             throw new RuntimeException(e);
