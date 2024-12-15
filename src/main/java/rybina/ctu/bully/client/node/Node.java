@@ -1,39 +1,37 @@
 package rybina.ctu.bully.client.node;
 
-import rybina.ctu.bully.client.FileManager;
+import rybina.ctu.bully.utils.NodeInfo;
 
+import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.registry.Registry;
 import java.util.function.Consumer;
 
 public interface Node extends Remote {
 
-    void initCoordinator() throws RemoteException;
-
-    void setCoordinatorId(int coordinatorId) throws RemoteException;
+    void setCoordinator(NodeInfo coordinator) throws RemoteException;
 
     void setIsCoordinator(boolean isCoordinator) throws RemoteException;
 
-    void becomeCoordinator() throws RemoteException;
+    void becomeCoordinator() throws RemoteException, NotBoundException;
 
-    void startElection() throws RemoteException;
+    void startElection() throws RemoteException, NotBoundException;
 
-    int getNodeId() throws RemoteException;
+    void wakeUpElection(Node sender) throws RemoteException, NotBoundException;
 
-    void notifyAll(Consumer<Node> callback) throws RemoteException;
+    String getNodeId() throws RemoteException;
 
-    Node getCoordinator() throws RemoteException;
+    void notifyAll(Consumer<Node> callback) throws RemoteException, NotBoundException;
 
-    FileManager getFileManager() throws RemoteException;
+    Node getCoordinator() throws RemoteException, NotBoundException;
 
     boolean isCoordinator() throws RemoteException;
 
-    boolean createFile(String filename) throws RemoteException;
+    void receiveLostStatus() throws RemoteException;
 
-    boolean deleteFile(String filename) throws RemoteException;
+    void addNeighbor(NodeInfo neighbor) throws RemoteException, NotBoundException;
 
-    boolean writeToFile(String filename, String content) throws RemoteException;
+    void showAllNodes() throws RemoteException;
 
-    String readFromFile(String filename) throws RemoteException;
+    NodeInfo getNodeInfo() throws RemoteException;
 }

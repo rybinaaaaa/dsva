@@ -1,35 +1,38 @@
 package rybina.ctu.bully;
-import rybina.ctu.bully.client.NodeBinder;
-import rybina.ctu.bully.client.NodeBinderImpl;
 
+import rybina.ctu.bully.client.node.Node;
+import rybina.ctu.bully.client.node.NodeImpl;
+
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.logging.Logger;
-
-import static rybina.ctu.bully.utils.ServerProperties.getHost;
-import static rybina.ctu.bully.utils.ServerProperties.getPort;
 
 public class Server {
     private static final Logger logger = Logger.getLogger(Server.class.getName());
 
     public static void startServer() {
-        try {
-            System.setProperty("java.rmi.server.hostname", getHost());
-            logger.info("Preparing server...");
-            Registry registry = LocateRegistry.createRegistry(getPort());
-            registry.rebind(NodeBinder.class.getName(), new NodeBinderImpl());
-            logger.info("Server ready!");
+        System.setProperty("java.rmi.server.hostname", "localhost");
 
-            while (true) {
-                Thread.sleep(1000000);
-            }
-        } catch (RemoteException e) {
-            logger.severe("Server exception: " + e);
-        } catch (InterruptedException e) {
-            logger.severe("Server has been interrupted: " + e);
+        try {
+            // Create nodes
+            NodeImpl node1 = new NodeImpl("localhost", 1099, "1");
+            NodeImpl node2 = new NodeImpl("localhost", 1098, "2");
+            NodeImpl node3 = new NodeImpl("localhost", 1097, "3");
+
+
+            node1.bindToServer();
+            node2.bindToServer();
+            node3.bindToServer();
+
+            // Add neighbors
+            node1.addNeighbor(node2.getNodeInfo());
+            node1.addNeighbor(node3.getNodeInfo());
+            node2.addNeighbor(node3.getNodeInfo());
+
+        } catch (RemoteException | NotBoundException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     public static void main(String[] args) {
