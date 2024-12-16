@@ -5,16 +5,25 @@ import java.util.Objects;
 
 public class NodeInfo implements Serializable {
 
-    private final String hostname;
-    private final int port;
-    private final String nodeId;
-    private final Simulation.PermissionRole role;
+    private String hostname;
+    private int port;
+    private String nodeId;
+    private Simulation.PermissionRole role = Simulation.PermissionRole.GUEST;
 
     public NodeInfo(String hostname, int port, String nodeId, Simulation.PermissionRole role) {
         this.hostname = hostname;
         this.port = port;
         this.nodeId = nodeId;
         this.role = role;
+    }
+
+    public NodeInfo(String hostname, int port, String nodeId) {
+        this.hostname = hostname;
+        this.port = port;
+        this.nodeId = nodeId;
+    }
+
+    public NodeInfo() {
     }
 
     public String getHostname() {
@@ -33,14 +42,20 @@ public class NodeInfo implements Serializable {
         return role;
     }
 
-    @Override
-    public String toString() {
-        return "NodeInfo{" +
-                "hostname='" + hostname + '\'' +
-                ", port=" + port +
-                ", nodeId='" + nodeId + '\'' +
-                ", role=" + role +
-                '}';
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setNodeId(String nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    public void setRole(Simulation.PermissionRole role) {
+        this.role = role;
     }
 
     @Override
@@ -54,5 +69,15 @@ public class NodeInfo implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hash(hostname, port, nodeId, role);
+    }
+
+    @Override
+    public String toString() {
+        return "NodeInfo{" +
+                "hostname='" + hostname + '\'' +
+                ", port=" + port +
+                ", nodeId='" + nodeId + '\'' +
+                ", role=" + role +
+                '}';
     }
 }

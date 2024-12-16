@@ -1,6 +1,7 @@
 package rybina.ctu.bully;
 
 import rybina.ctu.bully.client.node.NodeImpl;
+import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.Simulation;
 
 import java.rmi.NotBoundException;
@@ -13,9 +14,9 @@ public class Server {
 
         try {
             // Create nodes
-            NodeImpl node1 = new NodeImpl("localhost", 1099, "1", Simulation.PermissionRole.GUEST);
-            NodeImpl node2 = new NodeImpl("localhost", 1079, "2", Simulation.PermissionRole.ADMIN);
-            NodeImpl node3 = new NodeImpl("localhost", 1059, "3", Simulation.PermissionRole.USER);
+            NodeImpl node1 = new NodeImpl(new NodeInfo("localhost", 1099, "1", Simulation.PermissionRole.GUEST));
+            NodeImpl node2 = new NodeImpl(new NodeInfo("localhost", 1097, "2", Simulation.PermissionRole.GUEST));
+            NodeImpl node3 = new NodeImpl(new NodeInfo("localhost", 1096, "3", Simulation.PermissionRole.GUEST));
 
             node2.bindToNode(node1);
             node3.bindToNode(node1);

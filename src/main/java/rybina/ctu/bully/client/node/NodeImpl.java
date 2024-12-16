@@ -32,9 +32,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     private final HashMap<String, Simulation.FileInfo> fileSystem = enrichFakeData();
 
 
-    public NodeImpl(String hostname, int port, String nodeId, PermissionRole permissionRole) throws RemoteException, NotBoundException {
-        nodeInfo = new NodeInfo(hostname, port, nodeId, permissionRole);
-        this.nodeId = nodeId;
+    public NodeImpl(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
+        this.nodeInfo = nodeInfo;
+        this.nodeId = nodeInfo.getNodeId();
         bindToServer();
     }
 
