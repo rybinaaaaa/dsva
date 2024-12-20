@@ -3,7 +3,6 @@ package rybina.ctu.bully.client.node;
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
 import rybina.ctu.bully.utils.Simulation;
-import rybina.ctu.bully.utils.Simulation.PermissionRole;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -225,6 +224,4 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     public List<NodeInfo> getNeighbors() {
         return neighbors;
     }
-
-
 }

@@ -17,4 +17,13 @@ public class ServerRegistry {
         return (Node) LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort())
                 .lookup(nodeInfo.getNodeId());
     }
+
+    public static void removeNode(String hostname, int port, String id) throws RemoteException, NotBoundException {
+        LocateRegistry.getRegistry(hostname, port).unbind(id);
+        System.out.println("Node with ID " + id + " removed from RMI registry at " + hostname + ":" + port);
+    }
+
+    public static void removeNode(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
+        removeNode(nodeInfo.getHostname(), nodeInfo.getPort(), nodeInfo.getNodeId());
+    }
 }
