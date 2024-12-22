@@ -6,7 +6,6 @@ import rybina.ctu.bully.client.node.NodeImpl;
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
 
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +25,7 @@ public class RestController {
             try {
                 node.bindToServer(nodes);
                 nodes.add(node.getNodeInfo());
-                System.out.println("Node is added. " + node.getNodeInfo().toString());
+                System.out.println("Node is added. " + node.getNodeInfo());
                 ctx.status(200);
             } catch (RemoteException e) {
                 System.out.println("Some Exception: " + e.getMessage());
@@ -162,18 +161,15 @@ public class RestController {
         });
 
         app.post("/node/{hostname}/{port}/{id}/remove", ctx -> {
-            try {
-                String hostname = ctx.pathParam("hostname");
-                int port = Integer.parseInt(ctx.pathParam("port"));
-                String id = ctx.pathParam("id");
+            String hostname = ctx.pathParam("hostname");
+            int port = Integer.parseInt(ctx.pathParam("port"));
+            String id = ctx.pathParam("id");
 
-                ServerRegistry.removeNode(hostname, port, id);
-
+            if (ServerRegistry.removeNode(hostname, port, id)) {
                 ctx.result("Node removed successfully.");
-            } catch (NotBoundException e) {
-                ctx.status(404).result("Node not found in registry.");
-            } catch (Exception e) {
-                ctx.status(500).result("An error occurred: " + e.getMessage());
+                System.out.println("Node with id: " + id +" is removed");
+            } else {
+                ctx.status(404).result("Node not found");
             }
         });
     }

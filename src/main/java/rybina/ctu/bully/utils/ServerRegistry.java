@@ -1,33 +1,52 @@
 package rybina.ctu.bully.utils;
 
 import rybina.ctu.bully.client.node.Node;
+import rybina.ctu.bully.utils.NodeInfo;
 
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ServerRegistry {
 
-    public static Node getNode(String hostname, int port, String id) throws RemoteException, NotBoundException {
-        return (Node) LocateRegistry.getRegistry(hostname, port)
-                .lookup(id);
+    private static final Logger logger = Logger.getLogger(ServerRegistry.class.getName());
+
+    public static Node getNode(String hostname, int port, String id) {
+        try {
+            return (Node) LocateRegistry.getRegistry(hostname, port).lookup(id);
+        } catch (NotBoundException e) {
+            logger.log(Level.WARNING, "Node with ID " + id + " is not bound in the registry at " + hostname + ":" + port);
+        } catch (RemoteException e) {
+            logger.log(Level.SEVERE, "Failed to connect to RMI registry at " + hostname + ":" + port);
+        }
+        return null;
     }
 
-    public static Node getNode(NodeInfo nodeInfo) throws RemoteException {
+    public static Node getNode(NodeInfo nodeInfo) {
         try {
             return (Node) LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort())
                     .lookup(nodeInfo.getNodeId());
         } catch (NotBoundException e) {
-            return null;
+            logger.log(Level.WARNING, "Node with ID " + nodeInfo.getNodeId() + " is not bound in the registry at "
+                    + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
+        } catch (RemoteException e) {
+            logger.log(Level.SEVERE, "Failed to connect to RMI registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
         }
+        return null;
     }
 
-    public static void removeNode(String hostname, int port, String id) throws RemoteException, NotBoundException {
-        LocateRegistry.getRegistry(hostname, port).unbind(id);
-        System.out.println("Node with ID " + id + " removed from RMI registry at " + hostname + ":" + port);
-    }
-
-    public static void removeNode(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
-        removeNode(nodeInfo.getHostname(), nodeInfo.getPort(), nodeInfo.getNodeId());
+    public static boolean removeNode(String hostname, int port, String id) {
+        try {
+            LocateRegistry.getRegistry(hostname, port).unbind(id);
+            logger.info("Node with ID " + id + " removed from RMI registry at " + hostname + ":" + port);
+            return true;
+        } catch (NotBoundException e) {
+            logger.log(Level.WARNING, "Node with ID " + id + " is not bound in the registry at " + hostname + ":" + port);
+        } catch (RemoteException e) {
+            logger.log(Level.SEVERE, "Failed to connect to RMI registry at " + hostname + ":" + port);
+        }
+        return false;
     }
 }

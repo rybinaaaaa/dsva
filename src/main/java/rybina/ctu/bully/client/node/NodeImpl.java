@@ -52,7 +52,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public void startElection() throws RemoteException, NotBoundException {
-        logger.info("Node " + nodeId + ": Starts election");
         setCandidate(true);
         Node sender = this;
 
@@ -81,10 +80,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     public void wakeUpElection(Node sender) throws RemoteException, NotBoundException {
         if (electionStarted) return;
         electionStarted = true;
-        if (Integer.parseInt(sender.getNodeId()) > Integer.parseInt(nodeId)) {
+        if (Integer.parseInt(sender.getNodeId()) < Integer.parseInt(nodeId)) {
             sender.receiveLostStatus();
+            logger.info("Node " + nodeId + ": pushes lost status to sender: " + sender.getNodeId());
         }
 
+        logger.info("Node " + nodeId + ": wakes up election");
         startElection();
     }
 
@@ -173,11 +174,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     public void findCoordinator() throws RemoteException, NotBoundException {
-        if (neighbors.isEmpty()) {
-            logger.info("Node " + nodeId + ": no neighbors found. Becoming a leader");
-            becomeCoordinator();
-            return;
-        }
         Node coordinator = null;
         List<NodeInfo> toRemove = new ArrayList<>();
         for (NodeInfo neighbour : neighbors) {
@@ -190,6 +186,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             }
         }
         neighbors.removeAll(toRemove);
+
+        if (neighbors.isEmpty()) {
+            logger.info("Node " + nodeId + ": no neighbors found. Becoming a leader");
+            becomeCoordinator();
+            return;
+        }
+
         if (coordinator != null) {
             logger.info("Node " + nodeId + ": Coordinator is found. Coordinator id: " + coordinator.getNodeId());
             this.setCoordinator(coordinator.getNodeInfo());
