@@ -11,15 +11,15 @@ public interface Node extends FileManagerNode {
 
     void setCoordinator(NodeInfo coordinator) throws RemoteException;
 
-    void becomeCoordinator() throws RemoteException, NotBoundException;
+    void becomeCoordinator() throws RemoteException;
 
-    void startElection() throws RemoteException, NotBoundException;
+    void startElection() throws RemoteException;
 
-    void wakeUpElection(Node sender) throws RemoteException, NotBoundException;
+    void wakeUpElection(Node sender) throws RemoteException;
 
     String getNodeId() throws RemoteException;
 
-    void notifyAll(Consumer<Node> callback) throws RemoteException, NotBoundException;
+    void notifyAll(Consumer<Node> callback) throws RemoteException;
 
     Node getCoordinator() throws RemoteException;
 

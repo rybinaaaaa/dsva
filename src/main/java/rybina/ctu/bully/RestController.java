@@ -32,8 +32,6 @@ public class RestController {
                 ctx.status(404);
             }
         });
-        System.out.println("Active threads: " + Thread.activeCount());
-
 
         app.get("/node/{hostname}/{port}/{id}", ctx -> {
             try {

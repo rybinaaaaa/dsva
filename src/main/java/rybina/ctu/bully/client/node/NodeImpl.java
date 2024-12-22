@@ -3,7 +3,6 @@ package rybina.ctu.bully.client.node;
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
 
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -62,7 +61,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
                     if (Integer.parseInt(node.getNodeId()) > Integer.parseInt(nodeId)) {
                         node.wakeUpElection(sender);
                     }
-                } catch (RemoteException | NotBoundException e) {
+                } catch (RemoteException e) {
                     logger.severe("Node " + nodeId + ": Error during notifying nodes election");
                 }
             }
