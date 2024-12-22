@@ -8,10 +8,12 @@ import rybina.ctu.bully.utils.ServerRegistry;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RestController {
 
-    private static NodeImpl root = null;
+    public static List<NodeInfo> nodes = new ArrayList<>();
 
     public static void main(String[] args) {
         Javalin app = Javalin.create()
@@ -22,18 +24,17 @@ public class RestController {
             NodeInfo nodeInfo = ctx.bodyAsClass(NodeInfo.class);
             NodeImpl node = new NodeImpl(nodeInfo);
             try {
-                node.bindToServer();
-                if (root == null) {
-                    root = node;
-                } else {
-                    node.bindToNode(root);
-                }
+                node.bindToServer(nodes);
+                nodes.add(node.getNodeInfo());
                 System.out.println("Node is added. " + node.getNodeInfo().toString());
                 ctx.status(200);
             } catch (RemoteException e) {
+                System.out.println("Some Exception: " + e.getMessage());
                 ctx.status(404);
             }
         });
+        System.out.println("Active threads: " + Thread.activeCount());
+
 
         app.get("/node/{hostname}/{port}/{id}", ctx -> {
             try {
@@ -116,24 +117,24 @@ public class RestController {
             }
         });
 
-        // Endpoint to get available files of a node
-        app.get("/node/{hostname}/{port}/{id}/files", ctx -> {
-            try {
-                String hostname = ctx.pathParam("hostname");
-                int port = Integer.parseInt(ctx.pathParam("port"));
-                String id = ctx.pathParam("id");
-
-                Node node = ServerRegistry.getNode(hostname, port, id);
-
-                if (node == null) {
-                    ctx.status(404).result("Node not found");
-                } else {
-                    ctx.json(node.getAvailableFiles());
-                }
-            } catch (Exception e) {
-                ctx.status(500).result("An error occurred: " + e.getMessage());
-            }
-        });
+//        // Endpoint to get available files of a node
+//        app.get("/node/{hostname}/{port}/{id}/files", ctx -> {
+//            try {
+//                String hostname = ctx.pathParam("hostname");
+//                int port = Integer.parseInt(ctx.pathParam("port"));
+//                String id = ctx.pathParam("id");
+//
+//                Node node = ServerRegistry.getNode(hostname, port, id);
+//
+//                if (node == null) {
+//                    ctx.status(404).result("Node not found");
+//                } else {
+//                    ctx.json(node.getAvailableFiles());
+//                }
+//            } catch (Exception e) {
+//                ctx.status(500).result("An error occurred: " + e.getMessage());
+//            }
+//        });
 
         // Endpoint to get content of a file
         app.get("/node/{hostname}/{port}/{id}/file/{fileName}", ctx -> {
@@ -149,7 +150,7 @@ public class RestController {
                     ctx.status(404).result("Node not found");
                 } else {
                     try {
-                        String content = node.getContent(fileName, node.getNodeInfo());
+                        String content = node.getContent();
                         ctx.result(content);
                     } catch (RuntimeException e) {
                         ctx.status(403).result(e.getMessage());

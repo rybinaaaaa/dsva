@@ -9,7 +9,6 @@ import java.rmi.RemoteException;
 import java.util.List;
 
 public interface FileManagerNode extends Remote {
-     String getContent(String fileName, NodeInfo sender) throws RemoteException, NotBoundException;
-     String getContent(String fileName) throws RemoteException, NotBoundException;
-     List<Simulation.FileInfo> getAvailableFiles() throws RemoteException;
+     String getContent() throws RemoteException, NotBoundException;
+     String setContent() throws RemoteException;
 }

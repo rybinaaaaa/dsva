@@ -13,9 +13,13 @@ public class ServerRegistry {
                 .lookup(id);
     }
 
-    public static Node getNode(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
-        return (Node) LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort())
-                .lookup(nodeInfo.getNodeId());
+    public static Node getNode(NodeInfo nodeInfo) throws RemoteException {
+        try {
+            return (Node) LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort())
+                    .lookup(nodeInfo.getNodeId());
+        } catch (NotBoundException e) {
+            return null;
+        }
     }
 
     public static void removeNode(String hostname, int port, String id) throws RemoteException, NotBoundException {

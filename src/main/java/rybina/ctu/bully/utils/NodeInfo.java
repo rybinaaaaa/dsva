@@ -8,6 +8,7 @@ public class NodeInfo implements Serializable {
     private String hostname;
     private int port;
     private String nodeId;
+    private NodeInfo coordinator;
     private Simulation.PermissionRole role = Simulation.PermissionRole.GUEST;
 
     public NodeInfo(String hostname, int port, String nodeId, Simulation.PermissionRole role) {
@@ -58,17 +59,25 @@ public class NodeInfo implements Serializable {
         this.role = role;
     }
 
+    public NodeInfo getCoordinator() {
+        return coordinator;
+    }
+
+    public void setCoordinator(NodeInfo coordinator) {
+        this.coordinator = coordinator;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         NodeInfo nodeInfo = (NodeInfo) o;
-        return port == nodeInfo.port && Objects.equals(hostname, nodeInfo.hostname) && Objects.equals(nodeId, nodeInfo.nodeId) && role == nodeInfo.role;
+        return Objects.equals(nodeId, nodeInfo.nodeId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(hostname, port, nodeId, role);
+        return Objects.hash(hostname, port, nodeId, coordinator, role);
     }
 
     @Override
@@ -77,6 +86,7 @@ public class NodeInfo implements Serializable {
                 "hostname='" + hostname + '\'' +
                 ", port=" + port +
                 ", nodeId='" + nodeId + '\'' +
+                ", coordinator=" + coordinator.getNodeId() +
                 ", role=" + role +
                 '}';
     }
