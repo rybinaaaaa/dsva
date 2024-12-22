@@ -1,5 +1,7 @@
 package rybina.ctu.bully.utils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -8,15 +10,9 @@ public class NodeInfo implements Serializable {
     private String hostname;
     private int port;
     private String nodeId;
-    private NodeInfo coordinator;
-    private Simulation.PermissionRole role = Simulation.PermissionRole.GUEST;
 
-    public NodeInfo(String hostname, int port, String nodeId, Simulation.PermissionRole role) {
-        this.hostname = hostname;
-        this.port = port;
-        this.nodeId = nodeId;
-        this.role = role;
-    }
+    @JsonIgnore
+    private NodeInfo coordinator;
 
     public NodeInfo(String hostname, int port, String nodeId) {
         this.hostname = hostname;
@@ -39,25 +35,6 @@ public class NodeInfo implements Serializable {
         return nodeId;
     }
 
-    public Simulation.PermissionRole getRole() {
-        return role;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setNodeId(String nodeId) {
-        this.nodeId = nodeId;
-    }
-
-    public void setRole(Simulation.PermissionRole role) {
-        this.role = role;
-    }
 
     public NodeInfo getCoordinator() {
         return coordinator;
@@ -77,7 +54,7 @@ public class NodeInfo implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(hostname, port, nodeId, coordinator, role);
+        return Objects.hash(hostname, port, nodeId, coordinator);
     }
 
     @Override
@@ -87,7 +64,6 @@ public class NodeInfo implements Serializable {
                 ", port=" + port +
                 ", nodeId='" + nodeId + '\'' +
                 ", coordinator=" + coordinator.getNodeId() +
-                ", role=" + role +
                 '}';
     }
 }

@@ -21,7 +21,7 @@ public interface Node extends FileManagerNode {
 
     void notifyAll(Consumer<Node> callback) throws RemoteException, NotBoundException;
 
-    Node getCoordinator() throws RemoteException, NotBoundException;
+    Node getCoordinator() throws RemoteException;
 
     void receiveLostStatus() throws RemoteException;
 

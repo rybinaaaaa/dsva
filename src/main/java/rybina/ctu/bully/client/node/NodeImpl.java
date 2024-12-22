@@ -28,7 +28,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     private final List<NodeInfo> neighbors = new ArrayList<>();
 
 
-    public NodeImpl(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
+    public NodeImpl(NodeInfo nodeInfo) throws RemoteException {
         this.nodeInfo = nodeInfo;
         this.nodeId = nodeInfo.getNodeId();
     }
@@ -39,7 +39,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     @Override
-    public void becomeCoordinator() throws RemoteException, NotBoundException {
+    public void becomeCoordinator() throws RemoteException {
         setCandidate(false);
         setCoordinator(nodeInfo);
         notifyAll(node -> {
@@ -51,7 +51,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     @Override
-    public void startElection() throws RemoteException, NotBoundException {
+    public void startElection() throws RemoteException {
         setCandidate(true);
         Node sender = this;
 
@@ -77,7 +77,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     @Override
-    public void wakeUpElection(Node sender) throws RemoteException, NotBoundException {
+    public void wakeUpElection(Node sender) throws RemoteException {
         if (electionStarted) return;
         electionStarted = true;
         if (Integer.parseInt(sender.getNodeId()) < Integer.parseInt(nodeId)) {
@@ -107,7 +107,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     @Override
-    public Node getCoordinator() throws RemoteException, NotBoundException {
+    public Node getCoordinator() throws RemoteException {
         Node coordinator = ServerRegistry.getNode(nodeInfo.getCoordinator());
         if (coordinator == null) {
             logger.warning("Node " + nodeId + ": have null coordinator. Initializing coordinator");
@@ -145,7 +145,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         isCandidate = candidate;
     }
 
-    public void bindToServer(List<NodeInfo> nodePool) throws RemoteException, NotBoundException {
+    public void bindToServer(List<NodeInfo> nodePool) throws RemoteException {
         String hostname = nodeInfo.getHostname();
         int port = nodeInfo.getPort();
 
@@ -173,7 +173,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         findCoordinator();
     }
 
-    public void findCoordinator() throws RemoteException, NotBoundException {
+    public void findCoordinator() throws RemoteException {
         Node coordinator = null;
         List<NodeInfo> toRemove = new ArrayList<>();
         for (NodeInfo neighbour : neighbors) {
@@ -217,33 +217,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         nodeInfo.setCoordinator(coordinator);
     }
 
-//    public void bindNode(NodeInfo nodeInfo) throws RemoteException, NotBoundException {
-//        addNeighbor(nodeInfo);
-//        ServerRegistry.getNode(nodeInfo).addNeighbor(getNodeInfo());
-//    }
-
-//    public void bindToNode(NodeImpl node) throws NotBoundException, RemoteException {
-//        logger.info("Binding to node with id: " + node.getNodeId() + " node with id " + nodeId);
-//
-//        for (NodeInfo neighbor : node.getNeighbors()) {
-//            bindNode(neighbor);
-//        }
-//
-//        bindNode(node.getNodeInfo());
-//        if (node.coordinator == null) {
-//            startElection();
-//        } else {
-//            setCoordinator(node.coordinator);
-//        }
-//    }
-
     @Override
     public List<NodeInfo> getNeighbors() {
         return neighbors;
     }
 
     @Override
-    public String getContent() throws RemoteException, NotBoundException {
+    public String getContent() throws RemoteException {
         return "";
     }
 

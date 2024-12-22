@@ -77,7 +77,6 @@ public class RestController {
             }
         });
 
-        // Endpoint to get coordinator info
         app.get("/node/{hostname}/{port}/{id}/coordinator", ctx -> {
             try {
                 String hostname = ctx.pathParam("hostname");
@@ -90,70 +89,6 @@ public class RestController {
                     ctx.status(404).result("Node not found");
                 } else {
                     ctx.json(node.getCoordinator().getNodeInfo());
-                }
-            } catch (Exception e) {
-                ctx.status(500).result("An error occurred: " + e.getMessage());
-            }
-        });
-
-        // Endpoint to start an election from a specific node
-        app.post("/node/{hostname}/{port}/{id}/start_election", ctx -> {
-            try {
-                String hostname = ctx.pathParam("hostname");
-                int port = Integer.parseInt(ctx.pathParam("port"));
-                String id = ctx.pathParam("id");
-
-                Node node = ServerRegistry.getNode(hostname, port, id);
-
-                if (node == null) {
-                    ctx.status(404).result("Node not found");
-                } else {
-                    node.startElection();
-                    ctx.result("Election started successfully.");
-                }
-            } catch (Exception e) {
-                ctx.status(500).result("An error occurred: " + e.getMessage());
-            }
-        });
-
-//        // Endpoint to get available files of a node
-//        app.get("/node/{hostname}/{port}/{id}/files", ctx -> {
-//            try {
-//                String hostname = ctx.pathParam("hostname");
-//                int port = Integer.parseInt(ctx.pathParam("port"));
-//                String id = ctx.pathParam("id");
-//
-//                Node node = ServerRegistry.getNode(hostname, port, id);
-//
-//                if (node == null) {
-//                    ctx.status(404).result("Node not found");
-//                } else {
-//                    ctx.json(node.getAvailableFiles());
-//                }
-//            } catch (Exception e) {
-//                ctx.status(500).result("An error occurred: " + e.getMessage());
-//            }
-//        });
-
-        // Endpoint to get content of a file
-        app.get("/node/{hostname}/{port}/{id}/file/{fileName}", ctx -> {
-            try {
-                String hostname = ctx.pathParam("hostname");
-                int port = Integer.parseInt(ctx.pathParam("port"));
-                String id = ctx.pathParam("id");
-                String fileName = ctx.pathParam("fileName");
-
-                Node node = ServerRegistry.getNode(hostname, port, id);
-
-                if (node == null) {
-                    ctx.status(404).result("Node not found");
-                } else {
-                    try {
-                        String content = node.getContent();
-                        ctx.result(content);
-                    } catch (RuntimeException e) {
-                        ctx.status(403).result(e.getMessage());
-                    }
                 }
             } catch (Exception e) {
                 ctx.status(500).result("An error occurred: " + e.getMessage());
