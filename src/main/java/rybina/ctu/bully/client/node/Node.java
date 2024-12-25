@@ -2,12 +2,12 @@ package rybina.ctu.bully.client.node;
 
 import rybina.ctu.bully.utils.NodeInfo;
 
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-public interface Node extends FileManagerNode {
+public interface Node {
 
     void setCoordinator(NodeInfo coordinator) throws RemoteException;
 
@@ -30,4 +30,10 @@ public interface Node extends FileManagerNode {
     NodeInfo getNodeInfo() throws RemoteException;
 
     List<NodeInfo> getNeighbors() throws RemoteException;
+
+    String getFile() throws RemoteException;
+
+    String setFile(String file) throws RemoteException, InterruptedException, TimeoutException;
+
+    void setFileByLeader(String file) throws RemoteException;
 }

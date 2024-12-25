@@ -10,6 +10,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -18,6 +20,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     private static final Logger logger = Logger.getLogger(NodeImpl.class.getName());
 
     private final NodeInfo nodeInfo;
+
+    private final ReentrantLock lock = new ReentrantLock();
+    private String file = "";
+    private final static int WAITING_LIMIT = 5;
 
     private final String nodeId;
     private boolean isCoordinator = false;
@@ -222,13 +228,51 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     @Override
-    public String getContent() throws RemoteException {
-        return "";
+    public String getFile() throws RemoteException {
+        if (!isCoordinator) {
+            return getCoordinator().getFile();
+        }
+        if (lock.isLocked()) {
+            logger.info("Leader: file is occupated by someone. Waiting...");
+        }
+        return file;
     }
 
     @Override
-    public String setContent() throws RemoteException {
-        return "";
+    public String setFile(String file) throws RemoteException, InterruptedException, TimeoutException {
+        if (!isCoordinator) {
+            return getCoordinator().setFile(file);
+        }
+
+        int timeFromRequest = 0;
+        while (!lock.tryLock()) {
+            if (timeFromRequest++ > WAITING_LIMIT) {
+                throw new TimeoutException();
+            }
+            logger.info("Leader: file is occupated by someone. Waiting...");
+            Thread.sleep(2000);
+        }
+        setFile(file);
+        notifyAll(new Consumer<Node>() {
+
+            @Override
+            public void accept(Node node) {
+                try {
+                    node.setFileByLeader(file);
+                } catch (RemoteException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        logger.info("Leader: file successfully updated everywhere, nice job!");
+        lock.unlock();
+        return file;
+    }
+
+    @Override
+    public void setFileByLeader(String file) throws RemoteException {
+        this.file = file;
+        logger.info("Node " + nodeId + ": file is changed by LEADER");
     }
 
     @Override
@@ -237,12 +281,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         NodeImpl node = (NodeImpl) o;
-        return Objects.equals(nodeId, node.nodeId);
+        return Objects.equals(nodeInfo, node.nodeInfo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), nodeId);
+        return Objects.hash(super.hashCode(), nodeInfo);
     }
 
     @Override

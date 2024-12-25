@@ -48,4 +48,17 @@ public class ServerRegistry {
         }
         return false;
     }
+
+    public static boolean removeNode(NodeInfo nodeInfo) {
+        try {
+            LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort()).unbind(nodeInfo.getNodeId());
+            logger.info("Node with ID " + nodeInfo.getNodeId()+ " removed from RMI registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
+            return true;
+        } catch (NotBoundException e) {
+            logger.log(Level.WARNING, "Node with ID " +  nodeInfo.getNodeId() + " is not bound in the registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
+        } catch (RemoteException e) {
+            logger.log(Level.SEVERE, "Failed to connect to RMI registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
+        }
+        return false;
+    }
 }

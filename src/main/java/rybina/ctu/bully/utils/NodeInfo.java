@@ -49,12 +49,12 @@ public class NodeInfo implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         NodeInfo nodeInfo = (NodeInfo) o;
-        return Objects.equals(nodeId, nodeInfo.nodeId);
+        return port == nodeInfo.port && Objects.equals(hostname, nodeInfo.hostname) && Objects.equals(nodeId, nodeInfo.nodeId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(hostname, port, nodeId, coordinator);
+        return Objects.hash(hostname, port, nodeId);
     }
 
     @Override
