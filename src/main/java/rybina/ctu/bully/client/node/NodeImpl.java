@@ -233,7 +233,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             return getCoordinator().getFile();
         }
         if (lock.isLocked()) {
-            logger.info("Leader: file is occupated by someone. Waiting...");
+            logger.info("Node (Leader) " + nodeId + ": file is occupated by someone. Waiting...");
         }
         return file;
     }
@@ -249,10 +249,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             if (timeFromRequest++ > WAITING_LIMIT) {
                 throw new TimeoutException();
             }
-            logger.info("Leader: file is occupated by someone. Waiting...");
+            logger.info("Node (Leader) " + nodeId + ": file is occupated by someone. Waiting...");
             Thread.sleep(2000);
         }
-        setFile(file);
+        this.file = file;
         notifyAll(new Consumer<Node>() {
 
             @Override
@@ -264,7 +264,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
                 }
             }
         });
-        logger.info("Leader: file successfully updated everywhere, nice job!");
+        logger.info("Node (Leader) " + nodeId + ": file successfully updated everywhere, nice job!");
         lock.unlock();
         return file;
     }

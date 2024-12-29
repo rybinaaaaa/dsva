@@ -2,12 +2,13 @@ package rybina.ctu.bully.client.node;
 
 import rybina.ctu.bully.utils.NodeInfo;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-public interface Node {
+public interface Node extends Remote {
 
     void setCoordinator(NodeInfo coordinator) throws RemoteException;
 

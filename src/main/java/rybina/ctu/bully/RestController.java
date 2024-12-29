@@ -1,6 +1,8 @@
 package rybina.ctu.bully;
 
 import io.javalin.Javalin;
+import io.javalin.http.Context;
+import org.jetbrains.annotations.Nullable;
 import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
 import rybina.ctu.bully.utils.FileUpdateRequest;
@@ -15,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 public class RestController {
 
     public static List<NodeInfo> nodes = new ArrayList<>();
+    public static String pathToNode = "/node/{hostname}/{port}/{id}";
 
     public static void main(String[] args) {
         Javalin app = Javalin.create()
@@ -46,13 +49,9 @@ public class RestController {
         });
 
 //        get info
-        app.get("/node/{hostname}/{port}/{id}", ctx -> {
+        app.get(pathToNode, ctx -> {
             try {
-                String hostname = ctx.pathParam("hostname");
-                int port = Integer.parseInt(ctx.pathParam("port"));
-                String id = ctx.pathParam("id");
-
-                Node node = ServerRegistry.getNode(hostname, port, id);
+                Node node = getNode(ctx);
 
                 if (node == null) {
                     ctx.status(404).result("Node not found");
@@ -68,49 +67,45 @@ public class RestController {
         });
 
 
-        app.get("/node/{hostname}/{port}/{id}/coordinator", ctx -> {
-            try {
-                String hostname = ctx.pathParam("hostname");
-                int port = Integer.parseInt(ctx.pathParam("port"));
-                String id = ctx.pathParam("id");
+//        app.get("/node/coordinator", ctx -> {
+//            try {
+//                Node node = getNode(ctx);
+//
+//                if (node == null) {
+//                    ctx.status(404).result("Node not found");
+//                } else {
+//                    ctx.json(node.getCoordinator().getNodeInfo());
+//                }
+//            } catch (Exception e) {
+//                ctx.status(500).result("An error occurred: " + e.getMessage());
+//            }
+//        });
 
-                Node node = ServerRegistry.getNode(hostname, port, id);
+        app.post(pathToNode.concat("/remove"), ctx -> {
+            Node node = getNode(ctx);
 
-                if (node == null) {
-                    ctx.status(404).result("Node not found");
-                } else {
-                    ctx.json(node.getCoordinator().getNodeInfo());
-                }
-            } catch (Exception e) {
-                ctx.status(500).result("An error occurred: " + e.getMessage());
-            }
-        });
-
-        app.post("/node/remove", ctx -> {
-            NodeInfo nodeInfo = ctx.bodyAsClass(NodeInfo.class);
-
-            if (ServerRegistry.removeNode(nodeInfo)) {
-                nodes.remove(nodeInfo);
+            if (node != null && ServerRegistry.removeNode(node.getNodeInfo())) {
+                nodes.remove(node.getNodeInfo());
                 ctx.result("Node removed successfully.");
-                System.out.println("Node with id: " + nodeInfo.getNodeId() + " is removed");
+                System.out.println("Node with id: " + node.getNodeId() + " is removed");
             } else {
                 ctx.status(404).result("Node not found");
             }
         });
 
 //        set file
-        app.post("/node/{hostname}/{port}/{id}/file", ctx -> {
+        app.post(pathToNode.concat("/file/set"), ctx -> {
             try {
-                FileUpdateRequest fileUpdateRequest = ctx.bodyAsClass(FileUpdateRequest.class);
 
-                Node node = ServerRegistry.getNode(fileUpdateRequest.getNodeInfo());
+                Node node = getNode(ctx);
+                String content = ctx.bodyAsClass(String.class);
 
                 if (node == null) {
                     ctx.status(404).result("Node not found");
                     return;
                 }
 
-                String result = node.setFile(fileUpdateRequest.getFileContent());
+                String result = node.setFile(content);
                 ctx.result("File updated successfully: " + result);
             } catch (RemoteException e) {
                 ctx.status(500).result("Error during RMI operation: " + e.getMessage());
@@ -120,6 +115,33 @@ public class RestController {
                 ctx.status(500).result("An error occurred: " + e.getMessage());
             }
         });
+        //        get file
+        app.get(pathToNode.concat("/file/get"), ctx -> {
+            try {
+                Node node = getNode(ctx);
+
+                if (node == null) {
+                    ctx.status(404).result("Node not found");
+                    return;
+                }
+
+                String result = node.getFile();
+                ctx.result("File content: " + result);
+            } catch (RemoteException e) {
+                ctx.status(500).result("Error during RMI operation: " + e.getMessage());
+            } catch (Exception e) {
+                ctx.status(500).result("An error occurred: " + e.getMessage());
+            }
+        });
+    }
+
+    @Nullable
+    private static Node getNode(Context ctx) {
+        String hostname = ctx.pathParam("hostname");
+        int port = Integer.parseInt(ctx.pathParam("port"));
+        String id = ctx.pathParam("id");
+
+        return ServerRegistry.getNode(hostname, port, id);
     }
 
     public static void updateNodes() throws RemoteException {
