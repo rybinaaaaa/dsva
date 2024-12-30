@@ -5,7 +5,6 @@ import io.javalin.http.Context;
 import org.jetbrains.annotations.Nullable;
 import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
-import rybina.ctu.bully.utils.FileUpdateRequest;
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
 
@@ -23,7 +22,6 @@ public class RestController {
         Javalin app = Javalin.create()
                 .get("/", ctx -> {
                     updateNodes();
-                    ctx.json(nodes);
                 })
                 .start(7070);
 
@@ -126,6 +124,7 @@ public class RestController {
                 }
 
                 String result = node.getFile();
+                System.out.println("Read file: " + result);
                 ctx.result("File content: " + result);
             } catch (RemoteException e) {
                 ctx.status(500).result("Error during RMI operation: " + e.getMessage());

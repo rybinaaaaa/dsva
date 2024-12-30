@@ -3,6 +3,7 @@ package rybina.ctu.bully.client.node;
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
 
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -13,7 +14,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.logging.FileHandler;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class NodeImpl extends UnicastRemoteObject implements Node {
 
@@ -31,6 +34,21 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     private boolean electionStarted = false;
 
     private final List<NodeInfo> neighbors = new ArrayList<>();
+
+    static {
+        try {
+            FileHandler fileHandler = new FileHandler("app.log", true);
+
+            fileHandler.setFormatter(new SimpleFormatter());
+            logger.addHandler(fileHandler);
+
+            logger.setUseParentHandlers(false);
+
+        } catch (IOException e) {
+            System.err.println("Failed to set up logger: " + e.getMessage());
+        }
+    }
+
 
 
     public NodeImpl(NodeInfo nodeInfo) throws RemoteException {
@@ -53,11 +71,14 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             } catch (RemoteException ignored) {
             }
         });
+        setElectionStarted(false);
     }
 
     @Override
-    public void startElection() throws RemoteException {
+    public synchronized void startElection() throws RemoteException {
+        if (electionStarted) return;
         setCandidate(true);
+        setElectionStarted(true);
         Node sender = this;
 
         notifyAll(new Consumer<Node>() {
@@ -76,20 +97,16 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         if (isCandidate) {
             logger.info("Node " + nodeId + ": becomes a leader");
             becomeCoordinator();
+            return;
         }
 
-        electionStarted = false;
+        setElectionStarted(false);
     }
 
     @Override
     public void wakeUpElection(Node sender) throws RemoteException {
-        if (electionStarted) return;
-        electionStarted = true;
-        if (Integer.parseInt(sender.getNodeId()) < Integer.parseInt(nodeId)) {
-            sender.receiveLostStatus();
-            logger.info("Node " + nodeId + ": pushes lost status to sender: " + sender.getNodeId());
-        }
-
+        sender.receiveLostStatus();
+        logger.info("Node " + nodeId + ": pushes lost status to sender: " + sender.getNodeId());
         logger.info("Node " + nodeId + ": wakes up election");
         startElection();
     }
@@ -297,5 +314,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
                 ", isCoordinator=" + isCoordinator +
                 ", isCandidate=" + isCandidate +
                 '}';
+    }
+
+    public void setElectionStarted(boolean electionStarted) throws RemoteException {
+        this.electionStarted = electionStarted;
     }
 }
