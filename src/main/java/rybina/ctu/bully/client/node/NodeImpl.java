@@ -15,6 +15,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.logging.FileHandler;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
@@ -40,15 +41,14 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             FileHandler fileHandler = new FileHandler("app.log", true);
 
             fileHandler.setFormatter(new SimpleFormatter());
+            fileHandler.setLevel(Level.ALL);
+
             logger.addHandler(fileHandler);
-
-            logger.setUseParentHandlers(false);
-
+            logger.setLevel(Level.ALL);
         } catch (IOException e) {
             System.err.println("Failed to set up logger: " + e.getMessage());
         }
     }
-
 
 
     public NodeImpl(NodeInfo nodeInfo) throws RemoteException {
@@ -63,6 +63,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public void becomeCoordinator() throws RemoteException {
+        logger.info("Node " + nodeId + ": becomes a Leader");
         setCandidate(false);
         setCoordinator(nodeInfo);
         notifyAll(node -> {
@@ -75,8 +76,11 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     @Override
-    public synchronized void startElection() throws RemoteException {
-        if (electionStarted) return;
+    public void startElection() throws RemoteException {
+        if (electionStarted) {
+            logger.info("Node " + nodeId + ": election already started, skipping.");
+            return;
+        }
         setCandidate(true);
         setElectionStarted(true);
         Node sender = this;
@@ -95,12 +99,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         });
 
         if (isCandidate) {
-            logger.info("Node " + nodeId + ": becomes a leader");
             becomeCoordinator();
             return;
         }
-
-        setElectionStarted(false);
     }
 
     @Override
@@ -236,6 +237,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     public void setCoordinator(NodeInfo coordinator) throws RemoteException {
         isCoordinator = coordinator.equals(nodeInfo);
+        if (!isCoordinator) setElectionStarted(false);
         nodeInfo.setCoordinator(coordinator);
     }
 
