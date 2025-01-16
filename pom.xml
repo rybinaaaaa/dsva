@@ -36,7 +36,7 @@
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin</artifactId>
-            <version>6.3.0</version>
+            <version>3.13.10</version>
         </dependency>
     </dependencies>
     <build>

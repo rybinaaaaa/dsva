@@ -176,8 +176,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         String hostname = nodeInfo.getHostname();
         int port = nodeInfo.getPort();
 
-        System.setProperty("java.rmi.server.hostname", hostname);
-
         logger.info("Preparing server...");
 
         Registry registry = null;
@@ -206,8 +204,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     public void bindToServer() throws RemoteException {
         String hostname = nodeInfo.getHostname();
         int port = nodeInfo.getPort();
-
-        System.setProperty("java.rmi.server.hostname", hostname);
 
         logger.info("Preparing server...");
 
@@ -375,11 +371,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
         NodeImpl node = null;
 
-        System.out.println(host);
         if (host == null || port == -1 || nodeId == null) {
             System.err.println("Usage: java Main <host> <port> <nodeId> [toHost toPort toNodeId]");
             return;
         }
+
+        System.setProperty("java.rmi.server.hostname", "0.0.0.0");
         node = new NodeImpl(new NodeInfo(host, port, nodeId));
 
         if (toHost == null || toPort == -1 || toNodeId == null) {
