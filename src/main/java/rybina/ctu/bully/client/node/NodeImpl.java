@@ -376,7 +376,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             return;
         }
 
-        System.setProperty("java.rmi.server.hostname", "0.0.0.0");
+        System.setProperty("java.rmi.server.hostname", host);
         node = new NodeImpl(new NodeInfo(host, port, nodeId));
 
         if (toHost == null || toPort == -1 || toNodeId == null) {
