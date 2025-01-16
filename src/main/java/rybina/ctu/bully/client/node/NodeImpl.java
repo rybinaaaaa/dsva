@@ -321,6 +321,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
                 }
             }
         });
+//        To simulate long operation
+        Thread.sleep(2000);
         logger.info("Node (Leader) " + nodeId + ": file successfully updated everywhere, nice job!");
         lock.unlock();
         return file;
