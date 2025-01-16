@@ -34,3 +34,6 @@ build/
 ### Mac OS ###
 .DS_Store
 /app.log
+
+node_*.log.lck
+node_*.log

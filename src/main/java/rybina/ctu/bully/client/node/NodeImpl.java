@@ -1,5 +1,6 @@
 package rybina.ctu.bully.client.node;
 
+import rybina.ctu.bully.RestController;
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
 
@@ -36,9 +37,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     private final List<NodeInfo> neighbors = new ArrayList<>();
 
-    static {
+
+    public NodeImpl(NodeInfo nodeInfo) throws RemoteException {
+        this.nodeInfo = nodeInfo;
+        this.nodeId = nodeInfo.getNodeId();
+
         try {
-            FileHandler fileHandler = new FileHandler("app.log", true);
+            FileHandler fileHandler = new FileHandler("node_" + nodeId + ".log", true);
 
             fileHandler.setFormatter(new SimpleFormatter());
             fileHandler.setLevel(Level.ALL);
@@ -48,12 +53,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         } catch (IOException e) {
             System.err.println("Failed to set up logger: " + e.getMessage());
         }
-    }
-
-
-    public NodeImpl(NodeInfo nodeInfo) throws RemoteException {
-        this.nodeInfo = nodeInfo;
-        this.nodeId = nodeInfo.getNodeId();
     }
 
     @Override
@@ -164,11 +163,16 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         }
     }
 
+    @Override
+    public List<NodeInfo> getNeighbours() throws RemoteException {
+        return neighbors;
+    }
+
     public void setCandidate(boolean candidate) {
         isCandidate = candidate;
     }
 
-    public void bindToServer(List<NodeInfo> nodePool) throws RemoteException {
+    public void bindToServerWithNode(NodeInfo nodeInfoTo) throws RemoteException {
         String hostname = nodeInfo.getHostname();
         int port = nodeInfo.getPort();
 
@@ -189,12 +193,50 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         registry.rebind(nodeId, this);
         logger.info("Node " + nodeId + ": Node is running with server at " + hostname + ":" + nodeInfo.getPort());
 
-        for (NodeInfo neighbour : nodePool) {
-            addNeighbor(neighbour);
+        Node node = ServerRegistry.getNode(nodeInfoTo);
+        assert node != null;
+        for (NodeInfo neighbor : node.getNeighbours()) {
+            this.addNeighbor(neighbor);
         }
+        this.addNeighbor(nodeInfoTo);
 
         findCoordinator();
     }
+
+    public void bindToServer() throws RemoteException {
+        String hostname = nodeInfo.getHostname();
+        int port = nodeInfo.getPort();
+
+        System.setProperty("java.rmi.server.hostname", hostname);
+
+        logger.info("Preparing server...");
+
+        Registry registry = null;
+
+        try {
+            registry = LocateRegistry.getRegistry(port);
+            registry.list();
+            logger.info("Connected to existing registry.");
+        } catch (RemoteException e) {
+            logger.info("No existing registry found. Creating a new one...");
+            registry = LocateRegistry.createRegistry(port);
+        }
+        registry.rebind(nodeId, this);
+        logger.info("Node " + nodeId + ": Node is running with server at " + hostname + ":" + nodeInfo.getPort());
+
+        becomeCoordinator();
+    }
+
+//    public void bindToNode(NodeInfo nodeInfoTo) throws RemoteException {
+//        Node node = ServerRegistry.getNode(nodeInfoTo);
+//        assert node != null;
+//        for (NodeInfo neighbor : node.getNeighbours()) {
+//            this.addNeighbor(neighbor);
+//        }
+//        this.addNeighbor(nodeInfoTo);
+//        this.setCoordinator(node.getCoordinator().getNodeInfo());
+//    }
+
 
     public void findCoordinator() throws RemoteException {
         Node coordinator = null;
@@ -320,5 +362,35 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     public void setElectionStarted(boolean electionStarted) throws RemoteException {
         this.electionStarted = electionStarted;
+    }
+
+    public static void main(String[] args) throws RemoteException {
+        String host = System.getProperty("host");
+        int port = Integer.parseInt(System.getProperty("port", "-1"));
+        String nodeId = System.getProperty("nodeId");
+
+        String toHost = System.getProperty("toHost", null);
+        int toPort = Integer.parseInt(System.getProperty("toPort", "-1"));
+        String toNodeId = System.getProperty("toNodeId", null);
+
+        NodeImpl node = null;
+
+        System.out.println(host);
+        if (host == null || port == -1 || nodeId == null) {
+            System.err.println("Usage: java Main <host> <port> <nodeId> [toHost toPort toNodeId]");
+            return;
+        }
+        node = new NodeImpl(new NodeInfo(host, port, nodeId));
+
+        if (toHost == null || toPort == -1 || toNodeId == null) {
+            System.out.println("Starting single node");
+            node.bindToServer();
+        } else {
+            System.out.println("Binding node to existing: " + toHost + "-" + toPort + "-" + toNodeId);
+            node.bindToServerWithNode(new NodeInfo(toHost, toPort, toNodeId));
+        }
+
+        RestController restController = new RestController(node);
+        restController.run();
     }
 }

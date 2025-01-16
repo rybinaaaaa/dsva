@@ -28,6 +28,8 @@ public interface Node extends Remote {
 
     void addNeighbor(NodeInfo neighbor) throws RemoteException;
 
+    List<NodeInfo> getNeighbours() throws RemoteException;
+
     NodeInfo getNodeInfo() throws RemoteException;
 
     List<NodeInfo> getNeighbors() throws RemoteException;

@@ -1,43 +1,42 @@
 package rybina.ctu.bully;
 
 import io.javalin.Javalin;
-import io.javalin.http.Context;
-import org.jetbrains.annotations.Nullable;
-import rybina.ctu.bully.client.node.Node;
 import rybina.ctu.bully.client.node.NodeImpl;
 import rybina.ctu.bully.utils.NodeInfo;
 import rybina.ctu.bully.utils.ServerRegistry;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class RestController {
 
-    public static List<NodeInfo> nodes = new ArrayList<>();
-    public static String pathToNode = "/node/{hostname}/{port}/{id}";
+    public String pathToNode;
+    private final NodeImpl node;
 
-    public static void main(String[] args) {
+    public RestController(NodeImpl node) throws RemoteException {
+        this.node = node;
+        this.pathToNode = node.getNodeInfo().getNodeId();
+    }
+
+    public void run() throws RemoteException {
+
         Javalin app = Javalin.create()
-                .get("/", ctx -> {
-                    updateNodes();
+                .get(pathToNode, ctx -> {
+                    ctx.json(this.node.getNodeInfo());
                 })
-                .start(7070);
+                .start(Integer.parseInt("1".concat(String.valueOf(node.getNodeInfo().getPort()))));
 
 //        add node
-        app.post("/add_node", ctx -> {
+        app.post(pathToNode.concat("/add_node"), ctx -> {
             NodeInfo nodeInfo = ctx.bodyAsClass(NodeInfo.class);
-            NodeImpl node = new NodeImpl(nodeInfo);
+            NodeImpl newNode = new NodeImpl(nodeInfo);
             try {
-                updateNodes();
                 if (!isUniqueId(nodeInfo.getNodeId())) {
                     System.out.println("Node with id " + nodeInfo.getNodeId() + " already exists");
                     ctx.status(404);
                     return;
                 }
-                node.bindToServer(nodes);
-                nodes.add(node.getNodeInfo());
+                newNode.bindToServerWithNode(node.getNodeInfo());
                 System.out.println("Node is added. " + node.getNodeInfo());
                 ctx.status(200).json(nodeInfo);
             } catch (RemoteException e) {
@@ -46,63 +45,28 @@ public class RestController {
             }
         });
 
-//        get info
-        app.get(pathToNode, ctx -> {
-            try {
-                Node node = getNode(ctx);
-
-                if (node == null) {
-                    ctx.status(404).result("Node not found");
-                } else {
-                    System.out.println(node.getNodeInfo());
-                    ctx.json(node.getNodeInfo());
-                }
-            } catch (NumberFormatException e) {
-                ctx.status(400).result("Invalid port number");
-            } catch (Exception e) {
-                ctx.status(500).result("An error occurred: " + e.getMessage());
-            }
+//        get neighbours info
+        app.get(pathToNode.concat("/neighbours"), ctx -> {
+            ctx.json(this.node.getNeighbors());
         });
 
 
-//        app.get("/node/coordinator", ctx -> {
-//            try {
-//                Node node = getNode(ctx);
-//
-//                if (node == null) {
-//                    ctx.status(404).result("Node not found");
-//                } else {
-//                    ctx.json(node.getCoordinator().getNodeInfo());
-//                }
-//            } catch (Exception e) {
-//                ctx.status(500).result("An error occurred: " + e.getMessage());
-//            }
-//        });
+//        kill
+        app.post(pathToNode.concat("/kill"), ctx -> {
 
-        app.post(pathToNode.concat("/remove"), ctx -> {
-            Node node = getNode(ctx);
-
-            if (node != null && ServerRegistry.removeNode(node.getNodeInfo())) {
-                nodes.remove(node.getNodeInfo());
-                ctx.result("Node removed successfully.");
-                System.out.println("Node with id: " + node.getNodeId() + " is removed");
+            if (ServerRegistry.removeNode(node.getNodeInfo())) {
+                ctx.result("Node is killed.");
+                System.out.println("Node with id: " + node.getNodeId() + " is killed");
+                app.stop();
             } else {
-                ctx.status(404).result("Node not found");
+                ctx.status(503).result("Something went wrong");
             }
         });
 
 //        set file
         app.post(pathToNode.concat("/file/set"), ctx -> {
             try {
-
-                Node node = getNode(ctx);
                 String content = ctx.bodyAsClass(String.class);
-
-                if (node == null) {
-                    ctx.status(404).result("Node not found");
-                    return;
-                }
-
                 String result = node.setFile(content);
                 ctx.result("File updated successfully: " + result);
             } catch (RemoteException e) {
@@ -113,16 +77,10 @@ public class RestController {
                 ctx.status(500).result("An error occurred: " + e.getMessage());
             }
         });
+
         //        get file
         app.get(pathToNode.concat("/file/get"), ctx -> {
             try {
-                Node node = getNode(ctx);
-
-                if (node == null) {
-                    ctx.status(404).result("Node not found");
-                    return;
-                }
-
                 String result = node.getFile();
                 System.out.println("Read file: " + result);
                 ctx.result("File content: " + result);
@@ -134,31 +92,9 @@ public class RestController {
         });
     }
 
-    @Nullable
-    private static Node getNode(Context ctx) {
-        String hostname = ctx.pathParam("hostname");
-        int port = Integer.parseInt(ctx.pathParam("port"));
-        String id = ctx.pathParam("id");
-
-        return ServerRegistry.getNode(hostname, port, id);
-    }
-
-    public static void updateNodes() throws RemoteException {
-        List<NodeInfo> toRemove = new ArrayList<>();
-
-        for (int i = 0; i < nodes.size(); i++) {
-            Node node = ServerRegistry.getNode(nodes.get(i));
-            if (node == null) {
-                toRemove.add(nodes.get(i));
-            } else {
-                nodes.set(i, node.getNodeInfo());
-            }
-        }
-        nodes.removeAll(toRemove);
-    }
-
-    public static boolean isUniqueId(String id) {
-        for (NodeInfo nodeInfo : nodes) {
+    public boolean isUniqueId(String id) throws RemoteException {
+        if (node.getNodeId().equals(id)) return false;
+        for (NodeInfo nodeInfo : node.getNeighbours()) {
             if (nodeInfo.getNodeId().equals(id)) {
                 return false;
             }
