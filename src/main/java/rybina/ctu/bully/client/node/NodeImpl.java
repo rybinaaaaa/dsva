@@ -180,10 +180,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             throw new RuntimeException("Node with id: " + nodeInfoTo.getNodeId() + " is not found in RMI registry");
         }
 
-        if (!node.isUniqueId(nodeId)) {
-            throw new RuntimeException("Node with id: " + nodeId + " is not unique");
-        }
-
         String hostname = nodeInfo.getHostname();
         int port = nodeInfo.getPort();
 
@@ -392,22 +388,5 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
         RestController restController = new RestController(node);
         restController.run();
-    }
-
-    @Override
-    public boolean isUniqueId(String nodeId) throws RemoteException {
-        NodeInfo toRemove = null;
-        for (NodeInfo nodeInfo : neighbors) {
-            if (nodeInfo.getNodeId().equals(nodeId)) {
-                if (ServerRegistry.getNode(nodeInfo) != null) {
-                    return false;
-                } else {
-                    toRemove = nodeInfo;
-                    break;
-                }
-            }
-        }
-        neighbors.remove(toRemove);
-        return true;
     }
 }
