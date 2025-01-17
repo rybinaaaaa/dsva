@@ -130,6 +130,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     @Override
     public Node getCoordinator() throws RemoteException {
+        logger.info("Node " + nodeId + ": getting coordinator");
         Node coordinator = ServerRegistry.getNode(nodeInfo.getCoordinator());
         if (coordinator == null) {
             logger.warning("Node " + nodeId + ": have null coordinator. Initializing coordinator");
@@ -152,6 +153,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     @Override
     public void addNeighbor(NodeInfo neighbour) throws RemoteException {
         if (!this.neighbors.contains(neighbour)) {
+            logger.info("Node " + nodeId + ": Adding neighbour: " + neighbour);
             neighbors.add(neighbour);
             Node node = ServerRegistry.getNode(neighbour);
             if (node == null) {
@@ -237,6 +239,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         for (NodeInfo neighbour : neighbors) {
             Node node = ServerRegistry.getNode(neighbour);
             if (node != null) {
+                logger.info("Node " + nodeId + ": asking neighbour: " + neighbour.getNodeId() + " for coordinator");
                 coordinator = node.getCoordinator();
                 break;
             } else {

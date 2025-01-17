@@ -2,9 +2,10 @@ package rybina.ctu.bully.utils;
 
 import rybina.ctu.bully.client.node.Node;
 
-import java.rmi.RemoteException;
 import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,7 +26,11 @@ public class ServerRegistry {
 
     public static Node getNode(NodeInfo nodeInfo) {
         try {
-            return (Node) LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort())
+            Registry registry = LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort());
+            if (registry == null) {
+                throw new RemoteException("Failed to get RMI registry");
+            }
+            return (Node) registry
                     .lookup(nodeInfo.getNodeId());
         } catch (NotBoundException e) {
             logger.log(Level.WARNING, "Node with ID " + nodeInfo.getNodeId() + " is not bound in the registry at "
@@ -52,10 +57,10 @@ public class ServerRegistry {
     public static boolean removeNode(NodeInfo nodeInfo) {
         try {
             LocateRegistry.getRegistry(nodeInfo.getHostname(), nodeInfo.getPort()).unbind(nodeInfo.getNodeId());
-            logger.info("Node with ID " + nodeInfo.getNodeId()+ " removed from RMI registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
+            logger.info("Node with ID " + nodeInfo.getNodeId() + " removed from RMI registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
             return true;
         } catch (NotBoundException e) {
-            logger.log(Level.WARNING, "Node with ID " +  nodeInfo.getNodeId() + " is not bound in the registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
+            logger.log(Level.WARNING, "Node with ID " + nodeInfo.getNodeId() + " is not bound in the registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
         } catch (RemoteException e) {
             logger.log(Level.SEVERE, "Failed to connect to RMI registry at " + nodeInfo.getHostname() + ":" + nodeInfo.getPort());
         }
