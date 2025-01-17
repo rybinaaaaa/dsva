@@ -180,7 +180,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             throw new RuntimeException("Node with id: " + nodeInfoTo.getNodeId() + " is not found in RMI registry");
         }
 
-        if (node.isUniqueId(nodeId)) {
+        if (!node.isUniqueId(nodeId)) {
             throw new RuntimeException("Node with id: " + nodeId + " is not unique");
         }
 
