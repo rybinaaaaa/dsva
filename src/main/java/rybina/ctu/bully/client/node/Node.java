@@ -41,4 +41,6 @@ public interface Node extends Remote {
     void setFileByLeader(String file) throws RemoteException;
 
     void setElectionStarted(boolean electionStarted) throws RemoteException;
+
+    boolean isUniqueId(String nodeId) throws RemoteException;
 }

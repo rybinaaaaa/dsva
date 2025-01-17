@@ -173,6 +173,17 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     public void bindToServerWithNode(NodeInfo nodeInfoTo) throws RemoteException {
+        logger.info("Node " + nodeId + ": Binding to existing node: " + nodeInfoTo);
+        Node node = ServerRegistry.getNode(nodeInfoTo);
+
+        if (node == null) {
+            throw new RuntimeException("Node with id: " + nodeInfoTo.getNodeId() + " is not found in RMI registry");
+        }
+
+        if (node.isUniqueId(nodeId)) {
+            throw new RuntimeException("Node with id: " + nodeId + " is not unique");
+        }
+
         String hostname = nodeInfo.getHostname();
         int port = nodeInfo.getPort();
 
@@ -189,12 +200,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             registry = LocateRegistry.createRegistry(port);
         }
         registry.rebind(nodeId, this);
-        logger.info("Node " + nodeId + ": Node is running with server at " + hostname + ":" + nodeInfo.getPort());
+        logger.info("Node " + nodeId + ": Node is running with server at " + hostname + ":" + port);
 
-        Node node = ServerRegistry.getNode(nodeInfoTo);
-        assert node != null;
+
         for (NodeInfo neighbor : node.getNeighbours()) {
-            this.addNeighbor(neighbor);
+            if (neighbor != null) {
+                this.addNeighbor(neighbor);
+            }
         }
         this.addNeighbor(nodeInfoTo);
 
@@ -218,7 +230,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             registry = LocateRegistry.createRegistry(port);
         }
         registry.rebind(nodeId, this);
-        logger.info("Node " + nodeId + ": Node is running with server at " + hostname + ":" + nodeInfo.getPort());
+        logger.info("Node " + nodeId + ": Node is running with server at " + hostname + ":" + port);
 
         becomeCoordinator();
     }
@@ -380,5 +392,22 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
         RestController restController = new RestController(node);
         restController.run();
+    }
+
+    @Override
+    public boolean isUniqueId(String nodeId) throws RemoteException {
+        NodeInfo toRemove = null;
+        for (NodeInfo nodeInfo : neighbors) {
+            if (nodeInfo.getNodeId().equals(nodeId)) {
+                if (ServerRegistry.getNode(nodeInfo) != null) {
+                    return false;
+                } else {
+                    toRemove = nodeInfo;
+                    break;
+                }
+            }
+        }
+        neighbors.remove(toRemove);
+        return true;
     }
 }
