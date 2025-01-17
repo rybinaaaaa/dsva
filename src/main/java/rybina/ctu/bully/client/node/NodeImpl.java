@@ -175,12 +175,17 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     public void bindToServerWithNode(NodeInfo nodeInfoTo) throws RemoteException {
-        logger.info("Node " + nodeId + ": Binding to existing node: " + nodeInfoTo);
         Node node = ServerRegistry.getNode(nodeInfoTo);
 
         if (node == null) {
             throw new RuntimeException("Node with id: " + nodeInfoTo.getNodeId() + " is not found in RMI registry");
         }
+        logger.info("Node " + nodeId + ": Binding to existing node: " + node.getNodeInfo());
+
+        if (!node.isUniqueId(nodeId)) {
+            throw new RuntimeException("Node with id: " + nodeId + " is already present in the network.");
+        }
+
 
         String hostname = nodeInfo.getHostname();
         int port = nodeInfo.getPort();
@@ -391,5 +396,32 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
         RestController restController = new RestController(node);
         restController.run();
+    }
+
+    @Override
+    public boolean isUniqueId(String nodeId) throws RemoteException {
+        logger.info("Checking uniqueness of node ID: " + nodeId);
+        NodeInfo toRemove = null;
+        for (NodeInfo nodeInfo : neighbors) {
+            logger.info("Checking neighbor: " + nodeInfo.getNodeId());
+            if (nodeInfo.getNodeId().equals(nodeId)) {
+                logger.info("Node ID " + nodeId + " found in neighbors.");
+                Node node = ServerRegistry.getNode(nodeInfo);
+                if (node != null) {
+                    logger.severe("Node with id: " + nodeId + " is already present in the network.");
+                    return false;
+                } else {
+                    logger.warning("Node with id: " + nodeId + " is not reachable. Removing from neighbors.");
+                    toRemove = nodeInfo;
+                    break;
+                }
+            }
+        }
+        if (toRemove != null) {
+            logger.info("Removing unreachable node: " + toRemove.getNodeId());
+            neighbors.remove(toRemove);
+        }
+        logger.info("Node ID " + nodeId + " is unique.");
+        return true;
     }
 }
