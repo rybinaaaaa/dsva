@@ -223,17 +223,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         becomeCoordinator();
     }
 
-//    public void bindToNode(NodeInfo nodeInfoTo) throws RemoteException {
-//        Node node = ServerRegistry.getNode(nodeInfoTo);
-//        assert node != null;
-//        for (NodeInfo neighbor : node.getNeighbours()) {
-//            this.addNeighbor(neighbor);
-//        }
-//        this.addNeighbor(nodeInfoTo);
-//        this.setCoordinator(node.getCoordinator().getNodeInfo());
-//    }
-
-
     public void findCoordinator() throws RemoteException {
         Node coordinator = null;
         List<NodeInfo> toRemove = new ArrayList<>();

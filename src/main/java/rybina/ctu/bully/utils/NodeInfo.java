@@ -10,6 +10,7 @@ public class NodeInfo implements Serializable {
     private String hostname;
     private int port;
     private String nodeId;
+    private String coordinatorId;
 
     @JsonIgnore
     private NodeInfo coordinator;
@@ -40,8 +41,13 @@ public class NodeInfo implements Serializable {
         return coordinator;
     }
 
+    public String getCoordinatorId() {
+        return coordinatorId;
+    }
+
     public void setCoordinator(NodeInfo coordinator) {
         this.coordinator = coordinator;
+        this.coordinatorId = coordinator.getNodeId();
     }
 
     @Override
@@ -63,7 +69,7 @@ public class NodeInfo implements Serializable {
                 "hostname='" + hostname + '\'' +
                 ", port=" + port +
                 ", nodeId='" + nodeId + '\'' +
-                ", coordinator=" + coordinator.getNodeId() +
+                ", coordinator=" + coordinatorId +
                 '}';
     }
 }
