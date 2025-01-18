@@ -295,7 +295,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
             return getCoordinator().getFile();
         }
         if (lock.isLocked()) {
-            logger.info("Node (Leader) " + nodeId + ": file is occupated by someone. Waiting...");
+            return "Editing file is in progress. Actual content: " + file;
         }
         return file;
     }
