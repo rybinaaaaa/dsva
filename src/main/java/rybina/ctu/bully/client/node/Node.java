@@ -36,7 +36,7 @@ public interface Node extends Remote {
 
     String getFile() throws RemoteException;
 
-    String setFile(String file) throws RemoteException, InterruptedException, TimeoutException;
+    String setFile(String file) throws RemoteException;
 
     void setFileByLeader(String file) throws RemoteException;
 

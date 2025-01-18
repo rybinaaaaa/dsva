@@ -12,6 +12,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -34,6 +36,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     private boolean isCoordinator = false;
     private boolean isCandidate = false;
     private boolean electionStarted = false;
+    private final BlockingQueue<String> fileUpdateQueue = new LinkedBlockingQueue<>();
 
     private final List<NodeInfo> neighbors = new ArrayList<>();
 
@@ -53,6 +56,52 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         } catch (IOException e) {
             System.err.println("Failed to set up logger: " + e.getMessage());
         }
+
+        new Thread(this::processFileUpdates).start();
+    }
+
+    private void processFileUpdates() {
+        logger.info("Node " + nodeId + ": Starting processFileUpdates thread.");
+        while (true) {
+            try {
+                String newFileContent = fileUpdateQueue.take();
+                logger.info("Node " + nodeId + ": Processing file update: " + newFileContent);
+                updateFile(newFileContent);
+            } catch (InterruptedException e) {
+                logger.warning("Node " + nodeId + ": processFileUpdates thread interrupted.");
+                Thread.currentThread().interrupt();
+                break;
+            } catch (RemoteException e) {
+                logger.severe("Node " + nodeId + ": RemoteException in processFileUpdates: " + e.getMessage());
+                throw new RuntimeException(e);
+            } catch (TimeoutException e) {
+                logger.severe("Node " + nodeId + ": TimeoutException in processFileUpdates: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        }
+        logger.info("Node " + nodeId + ": Exiting processFileUpdates thread.");
+    }
+
+    private void updateFile(String newFileContent) throws InterruptedException, TimeoutException, RemoteException {
+        int timeFromRequest = 0;
+        while (!lock.tryLock()) {
+            if (timeFromRequest++ > WAITING_LIMIT) {
+                throw new TimeoutException();
+            }
+            logger.info("Node (Leader) " + nodeId + ": file is occupied by someone. Waiting...");
+            Thread.sleep(2000);
+        }
+        this.file = newFileContent;
+        notifyAll(node -> {
+            try {
+                node.setFileByLeader(newFileContent);
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        Thread.sleep(2000); // Simulate long operation
+        logger.info("Node (Leader) " + nodeId + ": file successfully updated everywhere, nice job!");
+        lock.unlock();
     }
 
     @Override
@@ -301,35 +350,16 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     @Override
-    public String setFile(String file) throws RemoteException, InterruptedException, TimeoutException {
+    public String setFile(String file) throws RemoteException {
         if (!isCoordinator) {
             return getCoordinator().setFile(file);
         }
-
-        int timeFromRequest = 0;
-        while (!lock.tryLock()) {
-            if (timeFromRequest++ > WAITING_LIMIT) {
-                throw new TimeoutException();
-            }
-            logger.info("Node (Leader) " + nodeId + ": file is occupated by someone. Waiting...");
-            Thread.sleep(2000);
+        try {
+            fileUpdateQueue.put(file);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RemoteException("Failed to queue file update request", e);
         }
-        this.file = file;
-        notifyAll(new Consumer<Node>() {
-
-            @Override
-            public void accept(Node node) {
-                try {
-                    node.setFileByLeader(file);
-                } catch (RemoteException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-//        To simulate long operation
-        Thread.sleep(2000);
-        logger.info("Node (Leader) " + nodeId + ": file successfully updated everywhere, nice job!");
-        lock.unlock();
         return file;
     }
 

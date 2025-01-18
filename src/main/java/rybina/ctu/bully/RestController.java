@@ -71,8 +71,6 @@ public class RestController {
                 ctx.result("File updated successfully: " + result);
             } catch (RemoteException e) {
                 ctx.status(500).result("Error during RMI operation: " + e.getMessage());
-            } catch (InterruptedException | TimeoutException e) {
-                ctx.status(500).result("Operation was interrupted: " + e.getMessage());
             } catch (Exception e) {
                 ctx.status(500).result("An error occurred: " + e.getMessage());
             }

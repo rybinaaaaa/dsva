@@ -108,27 +108,70 @@ Optional:
 
 #### `setFile` Method
 
-The `setFile` method is used to update the file content managed by the node. If the node is the coordinator, it locks
-the file, updates its content, and notifies all neighbors about the change. If the node is not the coordinator, it
-delegates the file update to the coordinator.
+The `setFile` method is used to update the file content managed by the node. If the node is the coordinator, it queues the file update request for processing. If the node is not the coordinator, it delegates the file update to the coordinator.
 
 **Steps:**
 
 1. If the node is not the coordinator, it calls the `setFile` method on the coordinator.
 2. If the node is the coordinator:
-    - It tries to acquire the lock on the file.
-    - If the lock is acquired, it updates the file content.
-    - It notifies all neighbors about the file update by calling their `setFileByLeader` method.
-    - It releases the lock after the update.
+   - It queues the file update request in the `BlockingQueue` named `fileUpdateQueue`.
 
 ```java
-
 @Override
-public String setFile(String file) throws RemoteException, InterruptedException, TimeoutException {
+public String setFile(String file) throws RemoteException {
     if (!isCoordinator) {
         return getCoordinator().setFile(file);
     }
+    try {
+        fileUpdateQueue.put(file);
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RemoteException("Failed to queue file update request", e);
+    }
+    return file;
+}
+```
 
+#### Queue Logic for File Updates
+
+The `NodeImpl` class uses a `BlockingQueue` to manage file update requests. This ensures that file updates are processed in the order they are received, preventing race conditions and ensuring consistency.
+
+**How It Works:**
+
+1. **Initialization**:
+   - A `BlockingQueue` named `fileUpdateQueue` is initialized to hold file update requests.
+
+2. **Worker Thread**:
+   - A worker thread is started in the constructor of `NodeImpl` to process file update requests. This thread runs the `processFileUpdates` method.
+
+3. **Processing File Updates**:
+   - The `processFileUpdates` method continuously takes file update requests from the `fileUpdateQueue` and processes them using the `updateFile` method.
+   - The `updateFile` method acquires a lock on the file, updates the file content, and notifies all neighbors of the change.
+
+```java
+private void processFileUpdates() {
+    logger.info("Node " + nodeId + ": Starting processFileUpdates thread.");
+    while (true) {
+        try {
+            String newFileContent = fileUpdateQueue.take();
+            logger.info("Node " + nodeId + ": Processing file update: " + newFileContent);
+            updateFile(newFileContent);
+        } catch (InterruptedException e) {
+            logger.warning("Node " + nodeId + ": processFileUpdates thread interrupted.");
+            Thread.currentThread().interrupt();
+            break;
+        } catch (RemoteException e) {
+            logger.severe("Node " + nodeId + ": RemoteException in processFileUpdates: " + e.getMessage());
+            throw new RuntimeException(e);
+        } catch (TimeoutException e) {
+            logger.severe("Node " + nodeId + ": TimeoutException in processFileUpdates: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+    logger.info("Node " + nodeId + ": Exiting processFileUpdates thread.");
+}
+
+private void updateFile(String newFileContent) throws InterruptedException, TimeoutException, RemoteException {
     int timeFromRequest = 0;
     while (!lock.tryLock()) {
         if (timeFromRequest++ > WAITING_LIMIT) {
@@ -137,10 +180,11 @@ public String setFile(String file) throws RemoteException, InterruptedException,
         logger.info("Node (Leader) " + nodeId + ": file is occupied by someone. Waiting...");
         Thread.sleep(2000);
     }
-    this.file = file;
+    logger.info("Node (Leader) " + nodeId + ": Acquired lock, updating file to: " + newFileContent);
+    this.file = newFileContent;
     notifyAll(node -> {
         try {
-            node.setFileByLeader(file);
+            node.setFileByLeader(newFileContent);
         } catch (RemoteException e) {
             throw new RuntimeException(e);
         }
@@ -148,7 +192,6 @@ public String setFile(String file) throws RemoteException, InterruptedException,
     Thread.sleep(2000); // Simulate long operation
     logger.info("Node (Leader) " + nodeId + ": file successfully updated everywhere, nice job!");
     lock.unlock();
-    return file;
 }
 ```
 
@@ -178,3 +221,56 @@ public String getFile() throws RemoteException {
     return file;
 }
 ```
+
+### REST API
+
+The application provides a REST API for interacting with the nodes. Below are the available endpoints and their usage.
+
+#### Endpoints
+
+- `GET /<nodeId>`: Get node information
+- `POST /<nodeId>/add_node`: Add a new node
+- `GET /<nodeId>/neighbours`: Get neighbors information
+- `POST /<nodeId>/kill`: Kill the node
+- `POST /<nodeId>/file/set`: Set the file content
+- `GET /<nodeId>/file/get`: Get the file content
+
+#### Example Usage
+
+1. **Get Node Information**
+
+```bash
+curl -X GET http://<host>:<port>/<nodeId>
+```
+
+2. **Add a New Node**
+
+```bash
+curl -X POST http://<host>:<port>/<nodeId>/add_node -H "Content-Type: application/json" -d '{"hostname": "<hostname>", "port": <port>, "nodeId": "<newNodeId>"}'
+```
+
+3. **Get Neighbors Information**
+
+```bash
+curl -X GET http://<host>:<port>/<nodeId>/neighbours
+```
+
+4. **Kill the Node**
+
+```bash
+curl -X POST http://<host>:<port>/<nodeId>/kill
+```
+
+5. **Set the File Content**
+
+```bash
+curl -X POST http://<host>:<port>/<nodeId>/file/set -H "Content-Type: text/plain" -d '<fileContent>'
+```
+
+6. **Get the File Content**
+
+```bash
+curl -X GET http://<host>:<port>/<nodeId>/file/get
+```
+
+Replace `<host>`, `<port>`, `<nodeId>`, `<hostname>`, `<newNodeId>`, and `<fileContent>` with the appropriate values for your setup.
